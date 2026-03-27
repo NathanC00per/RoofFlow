@@ -21,6 +21,8 @@ import InvoicesList from './pages/invoices/InvoicesList';
 import InvoiceForm from './pages/invoices/InvoiceForm';
 import InvoiceDetail from './pages/invoices/InvoiceDetail';
 import InvoiceEdit from './pages/invoices/InvoiceEdit';
+import FinanceDashboard from './pages/finance/FinanceDashboard';
+import Expenses from './pages/finance/Expenses';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -64,6 +66,8 @@ const AuthenticatedApp = () => {
         <Route path="/invoices/new" element={<InvoiceForm />} />
         <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
         <Route path="/invoices/:id" element={<InvoiceDetail />} />
+        <Route path="/finance" element={<FinanceDashboard />} />
+        <Route path="/expenses" element={<Expenses />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

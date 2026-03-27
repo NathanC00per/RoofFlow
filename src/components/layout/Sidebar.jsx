@@ -10,7 +10,9 @@ import {
   ChevronRight,
   Package,
   FileText,
-  Receipt
+  Receipt,
+  BarChart2,
+  Wallet
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -34,9 +36,11 @@ const navGroups = [
   {
     label: "Finance",
     items: [
-      { label: "Materials", path: "/materials", icon: Package },
+      { label: "Finance Dashboard", path: "/finance", icon: BarChart2 },
       { label: "Estimates", path: "/estimates", icon: FileText },
       { label: "Invoices", path: "/invoices", icon: Receipt },
+      { label: "Expenses", path: "/expenses", icon: Wallet },
+      { label: "Materials", path: "/materials", icon: Package },
     ]
   }
 ];

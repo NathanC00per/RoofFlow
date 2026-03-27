@@ -1,0 +1,72 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "vendor": {
+      "type": "string",
+      "description": "Vendor or supplier name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "materials",
+        "labor",
+        "equipment",
+        "fuel",
+        "tools",
+        "permits",
+        "insurance",
+        "office",
+        "other"
+      ],
+      "default": "materials"
+    },
+    "job_id": {
+      "type": "string",
+      "description": "Optional linked job"
+    },
+    "receipt_url": {
+      "type": "string",
+      "description": "URL to uploaded receipt image"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "check",
+        "credit_card",
+        "debit_card",
+        "ach",
+        "other"
+      ],
+      "default": "credit_card"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "amount",
+    "category"
+  ]
+}
