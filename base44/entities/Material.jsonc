@@ -1,0 +1,67 @@
+{
+  "name": "Material",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Material name"
+    },
+    "category_id": {
+      "type": "string",
+      "description": "Reference to MaterialCategory"
+    },
+    "category_name": {
+      "type": "string",
+      "description": "Denormalized category name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string",
+      "description": "Unit of measure (e.g. sq ft, bundle, roll, each)",
+      "enum": [
+        "each",
+        "sq_ft",
+        "bundle",
+        "roll",
+        "gallon",
+        "box",
+        "sheet",
+        "linear_ft",
+        "square",
+        "bag",
+        "tube"
+      ]
+    },
+    "unit_cost": {
+      "type": "number",
+      "description": "Cost per unit (what you pay)"
+    },
+    "unit_price": {
+      "type": "number",
+      "description": "Price per unit (what you charge)"
+    },
+    "stock_quantity": {
+      "type": "number",
+      "description": "Current stock quantity",
+      "default": 0
+    },
+    "sku": {
+      "type": "string",
+      "description": "SKU or part number"
+    },
+    "supplier": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "unit",
+    "unit_price"
+  ]
+}

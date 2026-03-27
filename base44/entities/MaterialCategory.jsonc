@@ -1,0 +1,20 @@
+{
+  "name": "MaterialCategory",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Category name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string",
+      "description": "Hex color for display"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

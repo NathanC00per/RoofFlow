@@ -7,17 +7,38 @@ import {
   Clock, 
   HardHat,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Package,
+  FileText,
+  Receipt
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { label: "Dashboard", path: "/", icon: LayoutDashboard },
-  { label: "New Job", path: "/jobs/new", icon: PlusCircle },
-  { label: "All Jobs", path: "/jobs", icon: Briefcase },
-  { label: "Employees", path: "/employees", icon: Users },
-  { label: "Timesheets", path: "/timesheets", icon: Clock },
+const navGroups = [
+  {
+    label: "Operations",
+    items: [
+      { label: "Dashboard", path: "/", icon: LayoutDashboard },
+      { label: "New Job", path: "/jobs/new", icon: PlusCircle },
+      { label: "All Jobs", path: "/jobs", icon: Briefcase },
+    ]
+  },
+  {
+    label: "Workforce",
+    items: [
+      { label: "Employees", path: "/employees", icon: Users },
+      { label: "Timesheets", path: "/timesheets", icon: Clock },
+    ]
+  },
+  {
+    label: "Finance",
+    items: [
+      { label: "Materials", path: "/materials", icon: Package },
+      { label: "Estimates", path: "/estimates", icon: FileText },
+      { label: "Invoices", path: "/invoices", icon: Receipt },
+    ]
+  }
 ];
 
 export default function Sidebar() {
@@ -43,26 +64,35 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-1">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path || 
-            (item.path !== "/" && location.pathname.startsWith(item.path));
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                isActive 
-                  ? "bg-sidebar-accent text-white" 
-                  : "text-sidebar-foreground/70 hover:text-white hover:bg-sidebar-accent/50"
-              )}
-            >
-              <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "text-sidebar-primary")} />
-              {!collapsed && <span className="truncate">{item.label}</span>}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            {!collapsed && (
+              <p className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold px-3 mb-1">{group.label}</p>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const isActive = location.pathname === item.path ||
+                  (item.path !== "/" && location.pathname.startsWith(item.path));
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                      isActive
+                        ? "bg-sidebar-accent text-white"
+                        : "text-sidebar-foreground/70 hover:text-white hover:bg-sidebar-accent/50"
+                    )}
+                  >
+                    <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "text-sidebar-primary")} />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Collapse toggle */}

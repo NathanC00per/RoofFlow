@@ -1,0 +1,105 @@
+{
+  "name": "Invoice",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "description": "Reference to Job"
+    },
+    "estimate_id": {
+      "type": "string",
+      "description": "Reference to Estimate (if generated from one)"
+    },
+    "invoice_number": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "partial",
+        "paid",
+        "overdue",
+        "void"
+      ],
+      "default": "draft"
+    },
+    "issued_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "line_items": {
+      "type": "array",
+      "description": "Invoice line items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "material",
+              "labor",
+              "other"
+            ]
+          },
+          "material_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_price": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "subtotal": {
+      "type": "number"
+    },
+    "tax_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "tax_amount": {
+      "type": "number"
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "total": {
+      "type": "number"
+    },
+    "amount_paid": {
+      "type": "number",
+      "default": 0
+    },
+    "balance_due": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "payment_terms": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "job_id"
+  ]
+}

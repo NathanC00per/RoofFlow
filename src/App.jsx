@@ -12,6 +12,15 @@ import JobsList from './pages/jobs/JobsList';
 import JobDetail from './pages/jobs/JobDetail';
 import Employees from './pages/Employees';
 import Timesheets from './pages/Timesheets';
+import Materials from './pages/materials/Materials';
+import EstimatesList from './pages/estimates/EstimatesList';
+import EstimateForm from './pages/estimates/EstimateForm';
+import EstimateDetail from './pages/estimates/EstimateDetail';
+import EstimateEdit from './pages/estimates/EstimateEdit';
+import InvoicesList from './pages/invoices/InvoicesList';
+import InvoiceForm from './pages/invoices/InvoiceForm';
+import InvoiceDetail from './pages/invoices/InvoiceDetail';
+import InvoiceEdit from './pages/invoices/InvoiceEdit';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -46,6 +55,15 @@ const AuthenticatedApp = () => {
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/employees" element={<Employees />} />
         <Route path="/timesheets" element={<Timesheets />} />
+        <Route path="/materials" element={<Materials />} />
+        <Route path="/estimates" element={<EstimatesList />} />
+        <Route path="/estimates/new" element={<EstimateForm />} />
+        <Route path="/estimates/:id/edit" element={<EstimateEdit />} />
+        <Route path="/estimates/:id" element={<EstimateDetail />} />
+        <Route path="/invoices" element={<InvoicesList />} />
+        <Route path="/invoices/new" element={<InvoiceForm />} />
+        <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
+        <Route path="/invoices/:id" element={<InvoiceDetail />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
