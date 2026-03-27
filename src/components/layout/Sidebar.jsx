@@ -13,7 +13,8 @@ import {
   BarChart2,
   Wallet,
   Settings,
-  HardHat
+  HardHat,
+  Building2
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,9 @@ const navGroups = [
   {
     label: "Settings",
     items: [
+      { label: "Company Settings", path: "/settings/company", icon: Building2 },
       { label: "Templates", path: "/settings/templates", icon: Settings },
+      { label: "VAT Tracker", path: "/settings/vat", icon: Receipt },
     ]
   }
 ];

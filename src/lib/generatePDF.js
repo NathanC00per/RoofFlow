@@ -7,241 +7,330 @@ const UNIT_LABELS = {
   square: "Sq", bag: "Bag", tube: "Tube", hr: "Hr"
 };
 
-function fmt(n) { return `$${Number(n || 0).toFixed(2)}`; }
-function fmtDate(d) { if (!d) return ""; try { return new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }); } catch { return d; } }
+function fmt(n) { return `€${Number(n || 0).toFixed(2)}`; }
+function fmtDate(d) {
+  if (!d) return "";
+  try { return new Date(d).toLocaleDateString("en-IE", { year: "numeric", month: "short", day: "numeric" }); }
+  catch { return d; }
+}
 
-export function generateDocumentPDF({ type, doc, job, template = {} }) {
-  const pdf = new jsPDF({ unit: "pt", format: "letter" });
+function hexToRgb(hex) {
+  const h = (hex || "#000000").replace("#", "");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+function isEnabled(template, id) {
+  if (!template || !template.elements) return true;
+  const el = template.elements.find(e => e.id === id);
+  return el ? el.enabled : true;
+}
+
+/**
+ * @param {object} opts
+ *   type       - "INVOICE" | "ESTIMATE"
+ *   doc        - the invoice/estimate record
+ *   job        - the linked job record
+ *   company    - company settings object (from COMPANY_STORAGE_KEY)
+ *   template   - template object with elements[] and customNotes
+ */
+export function generateDocumentPDF({ type, doc, job, company = {}, template = {} }) {
+  const pdf = new jsPDF({ unit: "pt", format: "a4" });
   const W = pdf.internal.pageSize.getWidth();
   const H = pdf.internal.pageSize.getHeight();
-  const margin = 48;
-  const col2 = W / 2;
+  const margin = 44;
+  const col2 = W / 2 + 10;
 
   const {
-    companyName = "Your Company Name",
+    companyName = "Your Company",
     companyAddress = "",
     companyPhone = "",
     companyEmail = "",
     companyWebsite = "",
-    logoUrl = "",
+    vatNumber = "",
+    companyReg = "",
     primaryColor = "#1e3a5f",
     accentColor = "#e8730a",
     footerText = "Thank you for your business!",
-  } = template;
+    bankName = "",
+    accountName = "",
+    iban = "",
+    bic = "",
+    paymentNotes = "",
+  } = company;
 
-  // ── Header band ──────────────────────────────────────────────
-  const r = parseInt(primaryColor.slice(1, 3), 16);
-  const g = parseInt(primaryColor.slice(3, 5), 16);
-  const b = parseInt(primaryColor.slice(5, 7), 16);
-  pdf.setFillColor(r, g, b);
-  pdf.rect(0, 0, W, 80, "F");
+  const [pr, pg, pb] = hexToRgb(primaryColor);
+  const [ar, ag, ab] = hexToRgb(accentColor);
 
-  // Company name in header
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(20);
-  pdf.text(companyName, margin, 35);
+  let y = 0;
 
-  if (companyPhone || companyEmail) {
+  // ── HEADER ────────────────────────────────────────────────────
+  if (isEnabled(template, "header")) {
+    pdf.setFillColor(pr, pg, pb);
+    pdf.rect(0, 0, W, 78, "F");
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(18);
+    pdf.text(companyName || "Your Company", margin, 30);
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    const contactParts = [companyPhone, companyEmail, companyWebsite].filter(Boolean);
+    if (contactParts.length) pdf.text(contactParts.join("  |  "), margin, 44);
+    const infoParts = [companyAddress, vatNumber ? `VAT: ${vatNumber}` : "", companyReg ? `Reg: ${companyReg}` : ""].filter(Boolean);
+    if (infoParts.length) pdf.text(infoParts.join("  |  "), margin, 56);
+
+    // Doc type badge
+    pdf.setFillColor(ar, ag, ab);
+    const labelW = 120;
+    pdf.rect(W - margin - labelW, 14, labelW, 50, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(14);
+    pdf.text(type, W - margin - labelW + 12, 36);
+    const docNum = type === "INVOICE" ? (doc.invoice_number || "") : (doc.estimate_number || "");
     pdf.setFontSize(8);
     pdf.setFont("helvetica", "normal");
-    const contactLine = [companyPhone, companyEmail, companyWebsite].filter(Boolean).join("  |  ");
-    pdf.text(contactLine, margin, 50);
+    pdf.text(docNum, W - margin - labelW + 12, 50);
+
+    y = 96;
+  } else {
+    y = 24;
   }
-  if (companyAddress) {
+
+  // ── BILL TO + DOC META ────────────────────────────────────────
+  const showBillTo = isEnabled(template, "bill_to");
+  const showMeta = isEnabled(template, "doc_meta");
+
+  if (showBillTo || showMeta) {
+    pdf.setTextColor(80, 80, 80);
+    pdf.setFont("helvetica", "bold");
     pdf.setFontSize(8);
-    pdf.text(companyAddress, margin, 62);
-  }
 
-  // Document type label (right side of header)
-  const ar = parseInt(accentColor.slice(1, 3), 16);
-  const ag = parseInt(accentColor.slice(3, 5), 16);
-  const ab = parseInt(accentColor.slice(5, 7), 16);
-  pdf.setFillColor(ar, ag, ab);
-  const labelW = 130;
-  pdf.rect(W - margin - labelW, 16, labelW, 48, "F");
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(16);
-  pdf.text(type.toUpperCase(), W - margin - labelW + 14, 38);
-  const docNum = type === "INVOICE" ? (doc.invoice_number || "") : (doc.estimate_number || "");
-  pdf.setFontSize(9);
-  pdf.text(docNum, W - margin - labelW + 14, 54);
-
-  // ── Bill To / Job Info ───────────────────────────────────────
-  let y = 104;
-  pdf.setTextColor(80, 80, 80);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(9);
-  pdf.text("BILL TO", margin, y);
-  pdf.text("JOB DETAILS", col2, y);
-  y += 4;
-  pdf.setDrawColor(ar, ag, ab);
-  pdf.setLineWidth(1.5);
-  pdf.line(margin, y, margin + 140, y);
-  pdf.line(col2, y, col2 + 140, y);
-  y += 14;
-
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(10);
-  pdf.setTextColor(30, 30, 30);
-
-  if (job) {
-    pdf.setFont("helvetica", "bold");
-    pdf.text(job.customer_name || "", margin, y);
-    pdf.setFont("helvetica", "normal");
-    const addr = [job.address, job.city, job.state, job.zip].filter(Boolean).join(", ");
-    pdf.text(addr, margin, y + 14);
-    if (job.customer_phone) pdf.text(job.customer_phone, margin, y + 28);
-    if (job.customer_email) pdf.text(job.customer_email, margin, y + 42);
-  }
-
-  // Right column: dates
-  const issuedLabel = type === "INVOICE" ? "Invoice Date:" : "Estimate Date:";
-  const dueLabel = type === "INVOICE" ? "Due Date:" : "Expires:";
-  const issuedDate = doc.issued_date;
-  const dueDate = doc.due_date || doc.expiry_date;
-  pdf.setFont("helvetica", "bold");
-  pdf.text(issuedLabel, col2, y);
-  pdf.setFont("helvetica", "normal");
-  pdf.text(fmtDate(issuedDate), col2 + 90, y);
-  if (dueDate) {
-    pdf.setFont("helvetica", "bold");
-    pdf.text(dueLabel, col2, y + 14);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(fmtDate(dueDate), col2 + 90, y + 14);
-  }
-  if (type === "INVOICE" && doc.payment_terms) {
-    pdf.setFont("helvetica", "bold");
-    pdf.text("Terms:", col2, y + 28);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(doc.payment_terms, col2 + 90, y + 28);
-  }
-
-  // ── Line Items Table ─────────────────────────────────────────
-  y += 70;
-  const tableLeft = margin;
-  const tableRight = W - margin;
-  const tableWidth = tableRight - tableLeft;
-  const colWidths = { desc: tableWidth * 0.38, qty: tableWidth * 0.1, unit: tableWidth * 0.1, price: tableWidth * 0.14, tax: tableWidth * 0.1, total: tableWidth * 0.18 };
-  const cols = {
-    desc: tableLeft,
-    qty: tableLeft + colWidths.desc,
-    unit: tableLeft + colWidths.desc + colWidths.qty,
-    price: tableLeft + colWidths.desc + colWidths.qty + colWidths.unit,
-    tax: tableLeft + colWidths.desc + colWidths.qty + colWidths.unit + colWidths.price,
-    total: tableLeft + colWidths.desc + colWidths.qty + colWidths.unit + colWidths.price + colWidths.tax,
-  };
-
-  // Table header
-  pdf.setFillColor(r, g, b);
-  pdf.rect(tableLeft, y, tableWidth, 20, "F");
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(8);
-  y += 14;
-  pdf.text("Description", cols.desc + 4, y);
-  pdf.text("Qty", cols.qty + 2, y);
-  pdf.text("Unit", cols.unit + 2, y);
-  pdf.text("Unit Price", cols.price + 2, y);
-  pdf.text("Tax %", cols.tax + 2, y);
-  pdf.text("Total", cols.total + 2, y);
-  y += 10;
-
-  // Rows
-  pdf.setTextColor(30, 30, 30);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  const items = doc.line_items || [];
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    if (i % 2 === 0) {
-      pdf.setFillColor(246, 248, 252);
-      pdf.rect(tableLeft, y - 10, tableWidth, 18, "F");
+    if (showBillTo) {
+      pdf.text("BILL TO", margin, y);
+      pdf.setDrawColor(ar, ag, ab);
+      pdf.setLineWidth(1.5);
+      pdf.line(margin, y + 3, margin + 120, y + 3);
     }
-    const lineTotal = (item.quantity || 0) * (item.unit_price || 0);
-    const descText = pdf.splitTextToSize(item.description || "", colWidths.desc - 8);
-    pdf.text(descText, cols.desc + 4, y);
-    pdf.text(String(item.quantity || ""), cols.qty + 2, y);
-    pdf.text(UNIT_LABELS[item.unit] || item.unit || "", cols.unit + 2, y);
-    pdf.text(fmt(item.unit_price), cols.price + 2, y);
-    pdf.text(item.tax_rate != null && item.tax_rate !== "" ? `${item.tax_rate}%` : "—", cols.tax + 2, y);
-    pdf.text(fmt(lineTotal), cols.total + 2, y);
-    y += descText.length > 1 ? 18 * descText.length : 18;
 
-    // Page break
-    if (y > H - 200) {
-      pdf.addPage();
-      y = margin;
+    if (showMeta) {
+      pdf.text("DOCUMENT DETAILS", col2, y);
+      pdf.setDrawColor(ar, ag, ab);
+      pdf.setLineWidth(1.5);
+      pdf.line(col2, y + 3, col2 + 140, y + 3);
     }
-  }
 
-  // ── Totals ───────────────────────────────────────────────────
-  y += 10;
-  pdf.setDrawColor(200, 200, 200);
-  pdf.setLineWidth(0.5);
-  pdf.line(tableLeft, y, tableRight, y);
-  y += 16;
-
-  const { subtotal, taxBreakdown, totalTax, total, balanceDue } = computeDocumentTotals(
-    items, doc.discount_amount || 0, doc.amount_paid || 0
-  );
-
-  const totalsLeft = W - margin - 220;
-  function totalsRow(label, value, bold = false, colorHex = null) {
-    if (bold) pdf.setFont("helvetica", "bold"); else pdf.setFont("helvetica", "normal");
-    if (colorHex) {
-      const tr = parseInt(colorHex.slice(1, 3), 16);
-      const tg = parseInt(colorHex.slice(3, 5), 16);
-      const tb = parseInt(colorHex.slice(5, 7), 16);
-      pdf.setTextColor(tr, tg, tb);
-    } else { pdf.setTextColor(50, 50, 50); }
-    pdf.text(label, totalsLeft, y);
-    pdf.text(value, W - margin, y, { align: "right" });
     y += 16;
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(10);
+    pdf.setTextColor(20, 20, 20);
+
+    if (showBillTo && job) {
+      pdf.setFont("helvetica", "bold");
+      pdf.text(job.customer_name || "", margin, y);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      const addr = [job.address, job.city, job.zip].filter(Boolean).join(", ");
+      pdf.text(addr, margin, y + 12);
+      if (job.customer_phone) pdf.text(job.customer_phone, margin, y + 24);
+      if (job.customer_email) pdf.text(job.customer_email, margin, y + 36);
+    }
+
+    if (showMeta) {
+      pdf.setFontSize(9);
+      const rows = [
+        [type === "INVOICE" ? "Invoice Date:" : "Estimate Date:", fmtDate(doc.issued_date)],
+        [type === "INVOICE" ? "Due Date:" : "Expires:", fmtDate(doc.due_date || doc.expiry_date)],
+        ...(type === "INVOICE" && doc.payment_terms ? [["Terms:", doc.payment_terms]] : []),
+      ].filter(r => r[1]);
+      let ry = y;
+      for (const [label, val] of rows) {
+        pdf.setFont("helvetica", "bold");
+        pdf.text(label, col2, ry);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(val, col2 + 88, ry);
+        ry += 14;
+      }
+    }
+
+    y += 60;
   }
 
-  pdf.setFontSize(9);
-  totalsRow("Subtotal", fmt(subtotal));
-  for (const g of taxBreakdown) {
-    totalsRow(`Tax @ ${g.rate}% (on ${fmt(g.taxableAmount)})`, fmt(g.taxAmount));
-  }
-  if (taxBreakdown.length > 1) totalsRow("Total Tax", fmt(totalTax));
-  if (doc.discount_amount > 0) totalsRow(`Discount`, `-${fmt(doc.discount_amount)}`);
-  pdf.setLineWidth(0.8);
-  pdf.setDrawColor(r, g, b);
-  pdf.line(totalsLeft, y - 4, W - margin, y - 4);
-  totalsRow("TOTAL", fmt(total), true);
-  if (type === "INVOICE") {
-    if (doc.amount_paid > 0) totalsRow("Amount Paid", `-${fmt(doc.amount_paid)}`);
-    pdf.setFontSize(11);
-    totalsRow("BALANCE DUE", fmt(Math.max(0, balanceDue)), true, accentColor);
+  // ── LINE ITEMS ────────────────────────────────────────────────
+  if (isEnabled(template, "line_items")) {
+    const tableLeft = margin;
+    const tableRight = W - margin;
+    const tableWidth = tableRight - tableLeft;
+    const cw = { desc: tableWidth * 0.38, qty: tableWidth * 0.09, unit: tableWidth * 0.09, price: tableWidth * 0.14, tax: tableWidth * 0.1, total: tableWidth * 0.2 };
+    const cx = {
+      desc: tableLeft,
+      qty: tableLeft + cw.desc,
+      unit: tableLeft + cw.desc + cw.qty,
+      price: tableLeft + cw.desc + cw.qty + cw.unit,
+      tax: tableLeft + cw.desc + cw.qty + cw.unit + cw.price,
+      total: tableLeft + cw.desc + cw.qty + cw.unit + cw.price + cw.tax,
+    };
+
+    pdf.setFillColor(pr, pg, pb);
+    pdf.rect(tableLeft, y, tableWidth, 18, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8);
+    y += 13;
+    pdf.text("Description", cx.desc + 4, y);
+    pdf.text("Qty", cx.qty + 2, y);
+    pdf.text("Unit", cx.unit + 2, y);
+    pdf.text("Unit Price", cx.price + 2, y);
+    pdf.text("VAT %", cx.tax + 2, y);
+    pdf.text("Total", cx.total + 2, y);
+    y += 8;
+
+    pdf.setTextColor(20, 20, 20);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8.5);
+    const items = doc.line_items || [];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const lineTotal = (item.quantity || 0) * (item.unit_price || 0);
+      const descText = pdf.splitTextToSize(item.description || "", cw.desc - 8);
+      const rowH = Math.max(18, descText.length * 12);
+
+      if (i % 2 === 0) {
+        pdf.setFillColor(245, 247, 252);
+        pdf.rect(tableLeft, y - 1, tableWidth, rowH, "F");
+      }
+
+      pdf.text(descText, cx.desc + 4, y + 9);
+      pdf.text(String(item.quantity ?? ""), cx.qty + 2, y + 9);
+      pdf.text(UNIT_LABELS[item.unit] || item.unit || "", cx.unit + 2, y + 9);
+      pdf.text(fmt(item.unit_price), cx.price + 2, y + 9);
+      pdf.text(item.tax_rate != null && item.tax_rate !== "" ? `${item.tax_rate}%` : "—", cx.tax + 2, y + 9);
+      pdf.text(fmt(lineTotal), cx.total + 2, y + 9);
+      y += rowH;
+
+      if (y > H - 180) { pdf.addPage(); y = margin; }
+    }
+    y += 8;
   }
 
-  // ── Notes & Footer ───────────────────────────────────────────
-  if (doc.notes) {
+  // ── TOTALS ────────────────────────────────────────────────────
+  if (isEnabled(template, "totals")) {
+    const items = doc.line_items || [];
+    const { subtotal, taxBreakdown, totalTax, total, balanceDue } = computeDocumentTotals(
+      items, doc.discount_amount || 0, doc.amount_paid || 0
+    );
+
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, y, W - margin, y);
+    y += 12;
+
+    const totalsLeft = W - margin - 200;
+    function totalsRow(label, val, bold = false, colorRgb = null) {
+      pdf.setFontSize(9);
+      pdf.setFont("helvetica", bold ? "bold" : "normal");
+      if (colorRgb) pdf.setTextColor(...colorRgb); else pdf.setTextColor(50, 50, 50);
+      pdf.text(label, totalsLeft, y);
+      pdf.text(val, W - margin, y, { align: "right" });
+      y += 14;
+    }
+
+    totalsRow("Subtotal", fmt(subtotal));
+    for (const g of taxBreakdown) {
+      totalsRow(`VAT @ ${g.rate}% (on ${fmt(g.taxableAmount)})`, fmt(g.taxAmount));
+    }
+    if (taxBreakdown.length > 1) totalsRow("Total VAT", fmt(totalTax));
+    if ((doc.discount_amount || 0) > 0) totalsRow("Discount", `-${fmt(doc.discount_amount)}`);
+
+    pdf.setLineWidth(0.8);
+    pdf.setDrawColor(pr, pg, pb);
+    pdf.line(totalsLeft, y - 2, W - margin, y - 2);
+    totalsRow("TOTAL", fmt(total), true);
+
+    if (type === "INVOICE") {
+      if ((doc.amount_paid || 0) > 0) totalsRow("Amount Paid", `-${fmt(doc.amount_paid)}`);
+      y += 2;
+      pdf.setFontSize(11);
+      totalsRow("BALANCE DUE", fmt(Math.max(0, balanceDue)), true, [ar, ag, ab]);
+    }
+
+    y += 10;
+  }
+
+  // ── PAYMENT INFO ─────────────────────────────────────────────
+  if (type === "INVOICE" && isEnabled(template, "payment_info") && (iban || bic || bankName)) {
+    if (y > H - 160) { pdf.addPage(); y = margin; }
+
+    pdf.setTextColor(80, 80, 80);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(9);
+    pdf.text("PAYMENT DETAILS", margin, y);
+    pdf.setDrawColor(ar, ag, ab);
+    pdf.setLineWidth(1.5);
+    pdf.line(margin, y + 3, margin + 140, y + 3);
     y += 16;
+
+    pdf.setFillColor(248, 249, 252);
+    const payBlockH = [bankName, accountName, iban, bic, paymentNotes].filter(Boolean).length * 13 + 12;
+    pdf.rect(margin, y - 6, W - margin * 2, payBlockH, "F");
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.setTextColor(30, 30, 30);
+    const payRows = [
+      ["Bank:", bankName],
+      ["Account Name:", accountName],
+      ["IBAN:", iban],
+      ["BIC/SWIFT:", bic],
+    ].filter(r => r[1]);
+
+    for (const [label, val] of payRows) {
+      pdf.setFont("helvetica", "bold");
+      pdf.text(label, margin + 6, y + 6);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(val, margin + 90, y + 6);
+      y += 13;
+    }
+    if (paymentNotes) {
+      pdf.setFont("helvetica", "italic");
+      pdf.setFontSize(8);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text(paymentNotes, margin + 6, y + 6);
+      y += 13;
+    }
+    y += 14;
+  }
+
+  // ── NOTES ────────────────────────────────────────────────────
+  const combinedNotes = [doc.notes, template.customNotes].filter(Boolean).join("\n\n");
+  if (isEnabled(template, "notes") && combinedNotes) {
+    if (y > H - 120) { pdf.addPage(); y = margin; }
+
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(9);
     pdf.setTextColor(80, 80, 80);
-    pdf.text("Notes", margin, y);
+    pdf.text("NOTES", margin, y);
     y += 12;
     pdf.setFont("helvetica", "normal");
     pdf.setTextColor(60, 60, 60);
-    const noteLines = pdf.splitTextToSize(doc.notes, tableWidth);
+    const noteLines = pdf.splitTextToSize(combinedNotes, W - margin * 2);
     pdf.text(noteLines, margin, y);
-    y += noteLines.length * 12;
+    y += noteLines.length * 12 + 10;
   }
 
-  // Footer bar
-  const footerY = H - 36;
-  pdf.setFillColor(r, g, b);
-  pdf.rect(0, footerY, W, 36, "F");
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.text(footerText, W / 2, footerY + 22, { align: "center" });
+  // ── FOOTER ───────────────────────────────────────────────────
+  if (isEnabled(template, "footer")) {
+    const footerY = H - 32;
+    pdf.setFillColor(pr, pg, pb);
+    pdf.rect(0, footerY, W, 32, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.text(footerText || "Thank you for your business!", W / 2, footerY + 20, { align: "center" });
+  }
 
-  const filename = `${type === "INVOICE" ? doc.invoice_number : doc.estimate_number || type}_${job?.customer_name?.replace(/\s+/g, "_") || "document"}.pdf`;
+  const filename = `${type === "INVOICE" ? (doc.invoice_number || "INVOICE") : (doc.estimate_number || "ESTIMATE")}_${(job?.customer_name || "document").replace(/\s+/g, "_")}.pdf`;
   pdf.save(filename);
 }

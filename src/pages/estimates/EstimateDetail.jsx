@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import PageHeader from "@/components/shared/PageHeader";
 import { ArrowLeft, Pencil, Trash2, FileText, ArrowRight, FilePlus, Download } from "lucide-react";
 import { generateDocumentPDF } from "@/lib/generatePDF";
+// PDF uses company_settings + doc_templates from localStorage
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -108,8 +109,10 @@ export default function EstimateDetail() {
           <FilePlus className="w-4 h-4 mr-2" /> Convert to Invoice
         </Button>
         <Button variant="outline" size="sm" onClick={() => {
-          const tpl = (() => { try { return JSON.parse(localStorage.getItem("doc_template_settings") || "{}"); } catch { return {}; } })();
-          generateDocumentPDF({ type: "ESTIMATE", doc: estimate, job, template: tpl });
+          const company = (() => { try { return JSON.parse(localStorage.getItem("company_settings") || "{}"); } catch { return {}; } })();
+          const templates = (() => { try { return JSON.parse(localStorage.getItem("doc_templates") || "[]"); } catch { return []; } })();
+          const template = templates.find(t => t.type === "estimate" || t.type === "both") || {};
+          generateDocumentPDF({ type: "ESTIMATE", doc: estimate, job, company, template });
         }}>
           <Download className="w-4 h-4 mr-2" /> Download PDF
         </Button>

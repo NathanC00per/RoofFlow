@@ -24,6 +24,8 @@ import InvoiceEdit from './pages/invoices/InvoiceEdit';
 import FinanceDashboard from './pages/finance/FinanceDashboard';
 import Expenses from './pages/finance/Expenses';
 import Templates from './pages/settings/Templates';
+import CompanySettings from './pages/settings/CompanySettings';
+import VatTracker from './pages/settings/VatTracker';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -70,6 +72,8 @@ const AuthenticatedApp = () => {
         <Route path="/finance" element={<FinanceDashboard />} />
         <Route path="/expenses" element={<Expenses />} />
         <Route path="/settings/templates" element={<Templates />} />
+        <Route path="/settings/company" element={<CompanySettings />} />
+        <Route path="/settings/vat" element={<VatTracker />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
