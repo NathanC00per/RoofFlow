@@ -7,29 +7,22 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
+  const [isLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
-    // Safety timeout — never stay stuck loading
     const timeout = setTimeout(() => {
       setIsLoadingAuth(false);
-    }, 6000);
+    }, 5000);
 
     base44.auth.me()
       .then((currentUser) => {
         setUser(currentUser);
         setIsAuthenticated(true);
-        setAuthError(null);
       })
-      .catch((error) => {
+      .catch(() => {
+        // Not logged in or auth not required — that's fine, just show the app
         setIsAuthenticated(false);
-        const status = error?.status || error?.response?.status;
-        if (status === 401 || status === 403) {
-          setAuthError({ type: 'auth_required' });
-        } else if (error?.message?.includes('not_registered') || error?.code === 'user_not_registered') {
-          setAuthError({ type: 'user_not_registered' });
-        }
       })
       .finally(() => {
         clearTimeout(timeout);
