@@ -31,6 +31,7 @@ import Templates from './pages/settings/Templates';
 import CompanySettings from './pages/settings/CompanySettings';
 import VatTracker from './pages/settings/VatTracker';
 import EmployeeClockIn from './pages/employee/EmployeeClockIn';
+// v2026.03.27
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
