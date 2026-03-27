@@ -17,7 +17,8 @@ import {
   Building2,
   Kanban,
   UserCircle,
-  Lock
+  Lock,
+  Timer
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ const navGroups = [
     items: [
       { label: "Employees", path: "/employees", icon: Users },
       { label: "Timesheets", path: "/timesheets", icon: Clock },
+      { label: "My Clock-In", path: "/clock-in", icon: Timer },
     ]
   },
   {

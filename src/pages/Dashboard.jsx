@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Briefcase, Users, Clock, DollarSign, ArrowRight, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Briefcase, Users, Clock, DollarSign, ArrowRight, AlertTriangle, Map } from "lucide-react";
 import { Link } from "react-router-dom";
 import { JobStatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import PageHeader from "@/components/shared/PageHeader";
-import { format } from "date-fns";
+import JobsMap, { MapLegend } from "@/components/maps/JobsMap";
+import { format, subMonths, subWeeks } from "date-fns";
 
 function StatCard({ title, value, icon: Icon, subtitle, color }) {
   return (
@@ -26,7 +29,19 @@ function StatCard({ title, value, icon: Icon, subtitle, color }) {
   );
 }
 
+const TIME_RANGES = [
+  { label: "Last Month",   value: "1m",  months: 1 },
+  { label: "Last 3 Months", value: "3m", months: 3 },
+  { label: "Last 6 Months", value: "6m", months: 6 },
+  { label: "Last Year",    value: "1y",  months: 12 },
+  { label: "All Time",     value: "all", months: null },
+];
+
+const MAP_STATUSES = ["lead","estimate_scheduled","estimate_sent","approved","scheduled","in_progress","completed","cancelled"];
+
 export default function Dashboard() {
+  const [mapRange, setMapRange] = useState("6m");
+
   const { data: jobs = [], isLoading: jobsLoading } = useQuery({
     queryKey: ["jobs"],
     queryFn: () => base44.entities.Job.list("-created_date", 100),
@@ -50,6 +65,15 @@ export default function Dashboard() {
 
   const recentJobs = jobs.slice(0, 5);
 
+  const rangeConfig = TIME_RANGES.find(r => r.value === mapRange);
+  const mapJobs = jobs.filter(job => {
+    if (!rangeConfig.months) return true;
+    const cutoff = subMonths(new Date(), rangeConfig.months);
+    return new Date(job.created_date) >= cutoff;
+  });
+
+  const activeStatuses = [...new Set(mapJobs.map(j => j.status))];
+
   if (jobsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -69,6 +93,26 @@ export default function Dashboard() {
         <StatCard title="Pending Timesheets" value={pendingTimesheets.length} icon={Clock} subtitle="Awaiting approval" color="bg-amber-500" />
         <StatCard title="Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} subtitle="Completed jobs" color="bg-accent" />
       </div>
+
+      {/* Jobs Map */}
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Map className="w-4 h-4 text-primary" /> Jobs Map
+            <span className="text-xs font-normal text-muted-foreground">({mapJobs.length} jobs)</span>
+          </CardTitle>
+          <Select value={mapRange} onValueChange={setMapRange}>
+            <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {TIME_RANGES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent>
+          <JobsMap jobs={mapJobs} height="380px" />
+          <MapLegend statuses={activeStatuses} />
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Jobs */}

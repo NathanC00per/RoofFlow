@@ -30,6 +30,7 @@ import Expenses from './pages/finance/Expenses';
 import Templates from './pages/settings/Templates';
 import CompanySettings from './pages/settings/CompanySettings';
 import VatTracker from './pages/settings/VatTracker';
+import EmployeeClockIn from './pages/employee/EmployeeClockIn';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -81,6 +82,7 @@ const AuthenticatedApp = () => {
         <Route path="/settings/templates" element={<Templates />} />
         <Route path="/settings/company" element={<CompanySettings />} />
         <Route path="/settings/vat" element={<VatTracker />} />
+        <Route path="/clock-in" element={<EmployeeClockIn />} />
       </Route>
       <Route path="/customer" element={<CustomerPortal />} />
       <Route path="*" element={<PageNotFound />} />

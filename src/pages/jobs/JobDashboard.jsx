@@ -9,8 +9,9 @@ import PageHeader from "@/components/shared/PageHeader";
 import { format, isAfter, isBefore, addDays } from "date-fns";
 import {
   Search, LayoutGrid, List, AlertTriangle, Calendar,
-  FileText, Receipt, PlusCircle, ArrowRight, Clock, Briefcase
+  FileText, Receipt, PlusCircle, ArrowRight, Clock, Briefcase, Map
 } from "lucide-react";
+import JobsMap, { MapLegend } from "@/components/maps/JobsMap";
 import { cn } from "@/lib/utils";
 
 const STAGES = [
@@ -176,6 +177,7 @@ function ListView({ jobs, estimates, invoices }) {
 
 export default function JobDashboard() {
   const [view, setView] = useState("kanban");
+  const [showMap, setShowMap] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
 
@@ -257,20 +259,24 @@ export default function JobDashboard() {
           ))}
         </div>
         <div className="flex rounded-lg border overflow-hidden">
-          <button
-            onClick={() => setView("kanban")}
-            className={cn("p-2 transition-colors", view === "kanban" ? "bg-primary text-white" : "bg-background hover:bg-muted")}
-          >
+          <button onClick={() => setView("kanban")} className={cn("p-2 transition-colors", view === "kanban" ? "bg-primary text-white" : "bg-background hover:bg-muted")}>
             <LayoutGrid className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => setView("list")}
-            className={cn("p-2 transition-colors", view === "list" ? "bg-primary text-white" : "bg-background hover:bg-muted")}
-          >
+          <button onClick={() => setView("list")} className={cn("p-2 transition-colors", view === "list" ? "bg-primary text-white" : "bg-background hover:bg-muted")}>
             <List className="w-4 h-4" />
+          </button>
+          <button onClick={() => setShowMap(v => !v)} className={cn("p-2 transition-colors", showMap ? "bg-primary text-white" : "bg-background hover:bg-muted")}>
+            <Map className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      {showMap && (
+        <div className="mb-6">
+          <JobsMap jobs={filtered} height="360px" />
+          <MapLegend statuses={[...new Set(filtered.map(j => j.status))]} />
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { JobStatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import PageHeader from "@/components/shared/PageHeader";
 import { Pencil, Trash2, MapPin, Phone, Mail, Calendar, DollarSign, ArrowLeft, FileText } from "lucide-react";
+import JobsMap from "@/components/maps/JobsMap";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -194,12 +195,12 @@ export default function JobDetail() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Location</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-sm flex items-start gap-2">
-                <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                <span>{job.address}{job.city ? `, ${job.city}` : ""}{job.state ? `, ${job.state}` : ""} {job.zip}</span>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" /> Location</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {job.address}{job.city ? `, ${job.city}` : ""}{job.state ? `, ${job.state}` : ""} {job.zip}
               </p>
+              <JobsMap singleJob={job} height="220px" />
             </CardContent>
           </Card>
         </div>
