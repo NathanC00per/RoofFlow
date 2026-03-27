@@ -16,7 +16,8 @@ import {
   HardHat,
   Building2,
   Kanban,
-  UserCircle
+  UserCircle,
+  Lock
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -49,12 +50,18 @@ const navGroups = [
     ]
   },
   {
+    label: "Clients",
+    items: [
+      { label: "Customers", path: "/customers", icon: UserCircle },
+      { label: "Customer Portal", path: "/customer", icon: Lock },
+    ]
+  },
+  {
     label: "Settings",
     items: [
       { label: "Company Settings", path: "/settings/company", icon: Building2 },
       { label: "Templates", path: "/settings/templates", icon: Settings },
       { label: "VAT Tracker", path: "/settings/vat", icon: Receipt },
-      { label: "Customer Portal", path: "/customer", icon: UserCircle },
     ]
   }
 ];

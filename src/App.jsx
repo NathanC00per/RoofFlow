@@ -24,6 +24,8 @@ import InvoiceEdit from './pages/invoices/InvoiceEdit';
 import FinanceDashboard from './pages/finance/FinanceDashboard';
 import JobDashboard from './pages/jobs/JobDashboard';
 import CustomerPortal from './pages/customer/CustomerPortal';
+import CustomersList from './pages/customers/CustomersList';
+import CustomerDetail from './pages/customers/CustomerDetail';
 import Expenses from './pages/finance/Expenses';
 import Templates from './pages/settings/Templates';
 import CompanySettings from './pages/settings/CompanySettings';
@@ -73,6 +75,8 @@ const AuthenticatedApp = () => {
         <Route path="/invoices/:id" element={<InvoiceDetail />} />
         <Route path="/finance" element={<FinanceDashboard />} />
         <Route path="/job-dashboard" element={<JobDashboard />} />
+        <Route path="/customers" element={<CustomersList />} />
+        <Route path="/customers/:id" element={<CustomerDetail />} />
         <Route path="/expenses" element={<Expenses />} />
         <Route path="/settings/templates" element={<Templates />} />
         <Route path="/settings/company" element={<CompanySettings />} />
