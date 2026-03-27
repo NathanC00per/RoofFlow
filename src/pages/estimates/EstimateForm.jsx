@@ -36,12 +36,15 @@ export default function EstimateForm({ existing }) {
     line_items: [],
   });
 
-  // Auto-generate estimate number
+  // Auto-generate estimate number from highest existing
   useEffect(() => {
-    if (!isEditing && !form.estimate_number && allEstimates.length > 0) {
-      setForm(p => ({ ...p, estimate_number: `EST-${String(allEstimates.length + 1).padStart(4, "0")}` }));
-    } else if (!isEditing && !form.estimate_number) {
-      setForm(p => ({ ...p, estimate_number: "EST-0001" }));
+    if (!isEditing && allEstimates.length >= 0 && !form.estimate_number) {
+      let maxNum = 0;
+      for (const est of allEstimates) {
+        const match = (est.estimate_number || "").match(/(\d+)$/);
+        if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+      }
+      setForm(p => ({ ...p, estimate_number: `EST-${String(maxNum + 1).padStart(4, "0")}` }));
     }
   }, [allEstimates.length]);
 

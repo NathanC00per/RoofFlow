@@ -38,8 +38,14 @@ export default function InvoiceForm({ existing }) {
   });
 
   useEffect(() => {
-    if (!isEditing && !form.invoice_number) {
-      setForm(p => ({ ...p, invoice_number: `INV-${String((allInvoices.length || 0) + 1).padStart(4, "0")}` }));
+    if (!isEditing && allInvoices.length >= 0 && !form.invoice_number) {
+      // Find the highest existing INV number and increment it
+      let maxNum = 0;
+      for (const inv of allInvoices) {
+        const match = (inv.invoice_number || "").match(/(\d+)$/);
+        if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+      }
+      setForm(p => ({ ...p, invoice_number: `INV-${String(maxNum + 1).padStart(4, "0")}` }));
     }
   }, [allInvoices.length]);
 

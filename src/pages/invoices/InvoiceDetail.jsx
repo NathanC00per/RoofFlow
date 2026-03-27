@@ -48,6 +48,15 @@ export default function InvoiceDetail() {
   const { data: jobs = [] } = useQuery({ queryKey: ["jobs"], queryFn: () => base44.entities.Job.list() });
   const job = jobs.find(j => j.id === invoice?.job_id);
 
+  const { data: linkedEstimate } = useQuery({
+    queryKey: ["estimate", invoice?.estimate_id],
+    queryFn: async () => {
+      const rows = await base44.entities.Estimate.filter({ id: invoice.estimate_id });
+      return rows[0];
+    },
+    enabled: !!invoice?.estimate_id,
+  });
+
   const statusMutation = useMutation({
     mutationFn: (status) => base44.entities.Invoice.update(invoiceId, { status }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] }); toast.success("Status updated"); },
@@ -86,7 +95,8 @@ export default function InvoiceDetail() {
           const company = (() => { try { return JSON.parse(localStorage.getItem("company_settings") || "{}"); } catch { return {}; } })();
           const templates = (() => { try { return JSON.parse(localStorage.getItem("doc_templates") || "[]"); } catch { return []; } })();
           const template = templates.find(t => t.type === "invoice" || t.type === "both") || {};
-          generateDocumentPDF({ type: "INVOICE", doc: invoice, job, company, template });
+          const docWithRef = { ...invoice, estimate_number: linkedEstimate?.estimate_number };
+          generateDocumentPDF({ type: "INVOICE", doc: docWithRef, job, company, template });
         }}>
           <Download className="w-4 h-4 mr-2" /> Download PDF
         </Button>
@@ -206,8 +216,11 @@ export default function InvoiceDetail() {
             <Card>
               <CardContent className="p-5">
                 <p className="text-xs text-muted-foreground mb-2">From Estimate</p>
-                <Link to={`/estimates/${invoice.estimate_id}`} className="text-sm text-primary hover:underline inline-flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5" /> View Estimate <ArrowRight className="w-3 h-3" />
+                {linkedEstimate && (
+                  <p className="text-sm font-semibold mb-1">{linkedEstimate.estimate_number}</p>
+                )}
+                <Link to={`/estimates/${invoice.estimate_id}`} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                  <FileText className="w-3 h-3" /> View Estimate <ArrowRight className="w-3 h-3" />
                 </Link>
               </CardContent>
             </Card>

@@ -62,8 +62,13 @@ export default function EstimateDetail() {
   // Convert estimate to invoice
   const convertMutation = useMutation({
     mutationFn: async () => {
-      const invoiceCount = await base44.entities.Invoice.list("-created_date", 1);
-      const num = `INV-${String((invoiceCount.length || 0) + 1).padStart(4, "0")}`;
+      const allInvoices = await base44.entities.Invoice.list();
+      let maxNum = 0;
+      for (const inv of allInvoices) {
+        const match = (inv.invoice_number || "").match(/(\d+)$/);
+        if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+      }
+      const num = `INV-${String(maxNum + 1).padStart(4, "0")}`;
       return base44.entities.Invoice.create({
         job_id: estimate.job_id,
         estimate_id: estimateId,

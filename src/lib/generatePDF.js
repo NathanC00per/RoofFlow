@@ -152,6 +152,7 @@ export function generateDocumentPDF({ type, doc, job, company = {}, template = {
         [type === "INVOICE" ? "Invoice Date:" : "Estimate Date:", fmtDate(doc.issued_date)],
         [type === "INVOICE" ? "Due Date:" : "Expires:", fmtDate(doc.due_date || doc.expiry_date)],
         ...(type === "INVOICE" && doc.payment_terms ? [["Terms:", doc.payment_terms]] : []),
+        ...(type === "INVOICE" && doc.estimate_number ? [["Ref Estimate:", doc.estimate_number]] : []),
       ].filter(r => r[1]);
       let ry = y;
       for (const [label, val] of rows) {
@@ -253,9 +254,11 @@ export function generateDocumentPDF({ type, doc, job, company = {}, template = {
     if (taxBreakdown.length > 1) totalsRow("Total VAT", fmt(totalTax));
     if ((doc.discount_amount || 0) > 0) totalsRow("Discount", `-${fmt(doc.discount_amount)}`);
 
-    pdf.setLineWidth(0.8);
+    // Divider BEFORE total row (draw line, then advance y, then print label)
+    pdf.setLineWidth(0.6);
     pdf.setDrawColor(pr, pg, pb);
-    pdf.line(totalsLeft, y - 2, W - margin, y - 2);
+    pdf.line(totalsLeft, y, W - margin, y);
+    y += 10;
     totalsRow("TOTAL", fmt(total), true);
 
     if (type === "INVOICE") {
