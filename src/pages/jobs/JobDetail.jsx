@@ -6,30 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { JobStatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import PageHeader from "@/components/shared/PageHeader";
-import { Pencil, Trash2, MapPin, Phone, Mail, Calendar, DollarSign, ArrowLeft, FileText } from "lucide-react";
+import {
+  Pencil, Trash2, MapPin, Phone, Mail, Calendar, DollarSign,
+  ArrowLeft, FileText, Link2
+} from "lucide-react";
 import JobsMap from "@/components/maps/JobsMap";
+import JobFinancials from "@/components/jobs/JobFinancials";
+import JobWorkforce from "@/components/jobs/JobWorkforce";
+import JobRoofAssessment from "@/components/jobs/JobRoofAssessment";
+import JobLineItems from "@/components/jobs/JobLineItems";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 const JOB_TYPE_LABELS = {
   new_roof: "New Roof", repair: "Repair", inspection: "Inspection",
   gutter: "Gutter", siding: "Siding", other: "Other"
-};
-
-const ROOF_TYPE_LABELS = {
-  asphalt_shingle: "Asphalt Shingle", metal: "Metal", tile: "Tile",
-  flat: "Flat", slate: "Slate", wood_shake: "Wood Shake", other: "Other"
 };
 
 const STATUSES = [
@@ -44,7 +39,6 @@ const STATUSES = [
 ];
 
 export default function JobDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
   const jobId = window.location.pathname.split("/jobs/")[1];
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -56,6 +50,31 @@ export default function JobDetail() {
       return jobs[0];
     },
     enabled: !!jobId,
+  });
+
+  const { data: invoices = [] } = useQuery({
+    queryKey: ["invoices"],
+    queryFn: () => base44.entities.Invoice.list(),
+  });
+
+  const { data: expenses = [] } = useQuery({
+    queryKey: ["expenses"],
+    queryFn: () => base44.entities.Expense.list(),
+  });
+
+  const { data: timesheets = [] } = useQuery({
+    queryKey: ["timesheets"],
+    queryFn: () => base44.entities.Timesheet.list(),
+  });
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ["employees"],
+    queryFn: () => base44.entities.Employee.list(),
+  });
+
+  const { data: estimates = [] } = useQuery({
+    queryKey: ["estimates"],
+    queryFn: () => base44.entities.Estimate.list(),
   });
 
   const statusMutation = useMutation({
@@ -84,13 +103,20 @@ export default function JobDetail() {
     );
   }
 
+  const jobTimesheets = timesheets.filter(t => t.job_id === jobId);
+  const jobEstimates = estimates.filter(e => e.job_id === jobId);
+  const fullAddress = [job.address, job.city, job.state, job.zip].filter(Boolean).join(", ");
+
   return (
     <div>
       <Button variant="ghost" className="mb-4 -ml-2" onClick={() => navigate("/jobs")}>
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Jobs
       </Button>
 
-      <PageHeader title={job.customer_name} subtitle={`${JOB_TYPE_LABELS[job.job_type] || job.job_type} • Created ${format(new Date(job.created_date), "MMM d, yyyy")}`}>
+      <PageHeader
+        title={job.customer_name}
+        subtitle={`${JOB_TYPE_LABELS[job.job_type] || job.job_type} · Created ${format(new Date(job.created_date), "MMM d, yyyy")}`}
+      >
         <Select value={job.status} onValueChange={(v) => statusMutation.mutate(v)}>
           <SelectTrigger className="w-48">
             <SelectValue />
@@ -117,8 +143,11 @@ export default function JobDetail() {
       </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Info */}
+
+        {/* ── Left / Main column ── */}
         <div className="lg:col-span-2 space-y-6">
+
+          {/* Core job details */}
           <Card>
             <CardHeader><CardTitle className="text-base">Job Details</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-2 gap-y-4 gap-x-6">
@@ -132,39 +161,34 @@ export default function JobDetail() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Job Type</p>
-                <p className="text-sm font-medium">{JOB_TYPE_LABELS[job.job_type]}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Roof Type</p>
-                <p className="text-sm font-medium">{ROOF_TYPE_LABELS[job.roof_type] || "—"}</p>
+                <p className="text-sm font-medium">{JOB_TYPE_LABELS[job.job_type] || "—"}</p>
               </div>
               {job.start_date && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Start Date</p>
-                  <p className="text-sm font-medium flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{format(new Date(job.start_date), "MMM d, yyyy")}</p>
+                  <p className="text-sm font-medium flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />{format(new Date(job.start_date), "MMM d, yyyy")}
+                  </p>
                 </div>
               )}
               {job.end_date && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">End Date</p>
-                  <p className="text-sm font-medium flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{format(new Date(job.end_date), "MMM d, yyyy")}</p>
+                  <p className="text-sm font-medium flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />{format(new Date(job.end_date), "MMM d, yyyy")}
+                  </p>
                 </div>
               )}
-              {job.estimated_cost && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Estimated Cost</p>
-                  <p className="text-sm font-semibold flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" />{Number(job.estimated_cost).toLocaleString()}</p>
-                </div>
-              )}
-              {job.actual_cost && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Actual Cost</p>
-                  <p className="text-sm font-semibold flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" />{Number(job.actual_cost).toLocaleString()}</p>
+              {job.assigned_employees?.length > 0 && (
+                <div className="col-span-2">
+                  <p className="text-xs text-muted-foreground mb-1">Assigned Employees</p>
+                  <p className="text-sm font-medium">{job.assigned_employees.join(", ")}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
+          {/* Description / notes */}
           {job.description && (
             <Card>
               <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText className="w-4 h-4" />Notes</CardTitle></CardHeader>
@@ -173,10 +197,25 @@ export default function JobDetail() {
               </CardContent>
             </Card>
           )}
+
+          {/* Roof assessment */}
+          <JobRoofAssessment job={job} />
+
+          {/* Intake line items */}
+          <JobLineItems job={job} />
+
+          {/* Financial overview */}
+          <JobFinancials job={job} invoices={invoices} expenses={expenses} />
+
+          {/* Workforce / timesheets */}
+          <JobWorkforce timesheets={jobTimesheets} employees={employees} />
+
         </div>
 
-        {/* Sidebar */}
+        {/* ── Right sidebar ── */}
         <div className="space-y-6">
+
+          {/* Customer */}
           <Card>
             <CardHeader><CardTitle className="text-base">Customer</CardTitle></CardHeader>
             <CardContent className="space-y-3">
@@ -194,15 +233,53 @@ export default function JobDetail() {
             </CardContent>
           </Card>
 
+          {/* Location */}
           <Card>
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" /> Location</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                {job.address}{job.city ? `, ${job.city}` : ""}{job.state ? `, ${job.state}` : ""} {job.zip}
-              </p>
+              <p className="text-sm text-muted-foreground">{fullAddress}</p>
               <JobsMap singleJob={job} height="220px" />
             </CardContent>
           </Card>
+
+          {/* Photos */}
+          {(job.photos || []).length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Photos</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2">
+                  {job.photos.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`Photo ${i + 1}`} className="rounded-lg w-full h-24 object-cover hover:opacity-90 transition-opacity" />
+                    </a>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Linked documents */}
+          {(jobEstimates.length > 0 || invoices.filter(inv => inv.job_id === jobId).length > 0) && (
+            <Card>
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><Link2 className="w-4 h-4" />Documents</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {jobEstimates.map(est => (
+                  <a key={est.id} href={`/estimates/${est.id}`}
+                    className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/50 transition-colors text-sm">
+                    <span className="font-medium">Est #{est.estimate_number || est.id.slice(0, 8)}</span>
+                    <span className="capitalize text-muted-foreground text-xs">{est.status}</span>
+                  </a>
+                ))}
+                {invoices.filter(inv => inv.job_id === jobId).map(inv => (
+                  <a key={inv.id} href={`/invoices/${inv.id}`}
+                    className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/50 transition-colors text-sm">
+                    <span className="font-medium">Inv #{inv.invoice_number || inv.id.slice(0, 8)}</span>
+                    <span className="capitalize text-muted-foreground text-xs">{inv.status}</span>
+                  </a>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
