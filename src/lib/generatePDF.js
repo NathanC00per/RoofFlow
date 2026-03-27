@@ -68,17 +68,26 @@ export function generateDocumentPDF({ type, doc, job, company = {}, template = {
     pdf.setFillColor(pr, pg, pb);
     pdf.rect(0, 0, W, 78, "F");
 
+    let textX = margin;
+    // Logo (if provided and loadable)
+    if (company.logoUrl) {
+      try {
+        pdf.addImage(company.logoUrl, margin, 10, 48, 48);
+        textX = margin + 56;
+      } catch {}
+    }
+
     pdf.setTextColor(255, 255, 255);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(18);
-    pdf.text(companyName || "Your Company", margin, 30);
+    pdf.text(companyName || "Your Company", textX, 30);
 
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(8);
     const contactParts = [companyPhone, companyEmail, companyWebsite].filter(Boolean);
-    if (contactParts.length) pdf.text(contactParts.join("  |  "), margin, 44);
+    if (contactParts.length) pdf.text(contactParts.join("  |  "), textX, 44);
     const infoParts = [companyAddress, vatNumber ? `VAT: ${vatNumber}` : "", companyReg ? `Reg: ${companyReg}` : ""].filter(Boolean);
-    if (infoParts.length) pdf.text(infoParts.join("  |  "), margin, 56);
+    if (infoParts.length) pdf.text(infoParts.join("  |  "), textX, 56);
 
     // Doc type badge
     pdf.setFillColor(ar, ag, ab);
