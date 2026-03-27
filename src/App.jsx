@@ -50,13 +50,10 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
       navigateToLogin();
       return null;
-    } else {
-      // Unknown error — still render the app to avoid blank screen
-      console.warn('Auth error (non-blocking):', authError);
     }
+    // For any other error type, fall through and render the app
   }
 
   // Render the main app
