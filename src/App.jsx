@@ -31,6 +31,7 @@ import Templates from './pages/settings/Templates';
 import CompanySettings from './pages/settings/CompanySettings';
 import VatTracker from './pages/settings/VatTracker';
 import EmployeeClockIn from './pages/employee/EmployeeClockIn';
+import ErrorBoundary from './components/ErrorBoundary';
 // v2026.03.27
 
 const AuthenticatedApp = () => {
@@ -92,14 +93,16 @@ const AuthenticatedApp = () => {
 function App() {
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
