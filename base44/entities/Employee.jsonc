@@ -1,0 +1,62 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "foreman",
+        "roofer",
+        "laborer",
+        "estimator",
+        "office",
+        "apprentice"
+      ],
+      "description": "Employee role"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "on_leave"
+      ],
+      "default": "active"
+    },
+    "hourly_rate": {
+      "type": "number",
+      "description": "Hourly pay rate"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Employment start date"
+    },
+    "emergency_contact": {
+      "type": "string"
+    },
+    "emergency_phone": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name",
+    "role"
+  ]
+}

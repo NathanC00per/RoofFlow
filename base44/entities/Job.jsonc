@@ -1,0 +1,118 @@
+{
+  "name": "Job",
+  "type": "object",
+  "properties": {
+    "customer_name": {
+      "type": "string",
+      "description": "Customer full name"
+    },
+    "customer_phone": {
+      "type": "string",
+      "description": "Customer phone number"
+    },
+    "customer_email": {
+      "type": "string",
+      "description": "Customer email address"
+    },
+    "address": {
+      "type": "string",
+      "description": "Job site address"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "zip": {
+      "type": "string"
+    },
+    "job_type": {
+      "type": "string",
+      "enum": [
+        "new_roof",
+        "repair",
+        "inspection",
+        "gutter",
+        "siding",
+        "other"
+      ],
+      "description": "Type of roofing job"
+    },
+    "roof_type": {
+      "type": "string",
+      "enum": [
+        "asphalt_shingle",
+        "metal",
+        "tile",
+        "flat",
+        "slate",
+        "wood_shake",
+        "other"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "lead",
+        "estimate_scheduled",
+        "estimate_sent",
+        "approved",
+        "scheduled",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "lead"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "emergency"
+      ],
+      "default": "medium"
+    },
+    "estimated_cost": {
+      "type": "number",
+      "description": "Estimated cost of the job"
+    },
+    "actual_cost": {
+      "type": "number",
+      "description": "Actual cost upon completion"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed job description and notes"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "assigned_employees": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of assigned employee IDs"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Photo URLs of the job site"
+    }
+  },
+  "required": [
+    "customer_name",
+    "address",
+    "job_type"
+  ]
+}

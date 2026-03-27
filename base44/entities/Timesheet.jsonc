@@ -1,0 +1,61 @@
+{
+  "name": "Timesheet",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string",
+      "description": "Reference to Employee"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Denormalized employee name for display"
+    },
+    "job_id": {
+      "type": "string",
+      "description": "Reference to Job"
+    },
+    "job_address": {
+      "type": "string",
+      "description": "Denormalized job address for display"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "clock_in": {
+      "type": "string",
+      "description": "Clock in time (HH:mm)"
+    },
+    "clock_out": {
+      "type": "string",
+      "description": "Clock out time (HH:mm)"
+    },
+    "hours": {
+      "type": "number",
+      "description": "Total hours worked"
+    },
+    "break_minutes": {
+      "type": "number",
+      "description": "Break time in minutes",
+      "default": 0
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "employee_id",
+    "job_id",
+    "date",
+    "clock_in"
+  ]
+}

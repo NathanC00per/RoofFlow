@@ -1,0 +1,77 @@
+import { Link, useLocation } from "react-router-dom";
+import { 
+  LayoutDashboard, 
+  Briefcase, 
+  PlusCircle, 
+  Users, 
+  Clock, 
+  HardHat,
+  ChevronLeft,
+  ChevronRight
+} from "lucide-react";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+
+const navItems = [
+  { label: "Dashboard", path: "/", icon: LayoutDashboard },
+  { label: "New Job", path: "/jobs/new", icon: PlusCircle },
+  { label: "All Jobs", path: "/jobs", icon: Briefcase },
+  { label: "Employees", path: "/employees", icon: Users },
+  { label: "Timesheets", path: "/timesheets", icon: Clock },
+];
+
+export default function Sidebar() {
+  const location = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <aside className={cn(
+      "h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 sticky top-0",
+      collapsed ? "w-[72px]" : "w-64"
+    )}>
+      {/* Logo */}
+      <div className="p-5 flex items-center gap-3 border-b border-sidebar-border">
+        <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0">
+          <HardHat className="w-5 h-5 text-sidebar-primary-foreground" />
+        </div>
+        {!collapsed && (
+          <div className="overflow-hidden">
+            <h1 className="font-bold text-base text-white tracking-tight truncate">RoofPro</h1>
+            <p className="text-[11px] text-sidebar-foreground/60 truncate">Management</p>
+          </div>
+        )}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 p-3 space-y-1">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path || 
+            (item.path !== "/" && location.pathname.startsWith(item.path));
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                isActive 
+                  ? "bg-sidebar-accent text-white" 
+                  : "text-sidebar-foreground/70 hover:text-white hover:bg-sidebar-accent/50"
+              )}
+            >
+              <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "text-sidebar-primary")} />
+              {!collapsed && <span className="truncate">{item.label}</span>}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Collapse toggle */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="p-4 border-t border-sidebar-border hover:bg-sidebar-accent/50 transition-colors flex items-center justify-center"
+      >
+        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+      </button>
+    </aside>
+  );
+}
