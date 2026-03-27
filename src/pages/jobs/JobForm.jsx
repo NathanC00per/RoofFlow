@@ -9,9 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/shared/PageHeader";
+import LineItemsEditor from "@/components/documents/LineItemsEditor";
+import DocumentTotals, { computeDocumentTotals } from "@/components/documents/DocumentTotals";
+import CustomerPicker from "@/components/jobs/CustomerPicker";
+import PostJobModal from "@/components/jobs/PostJobModal";
 import { Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import CustomerPicker from "@/components/jobs/CustomerPicker";
 
 const JOB_TYPES = [
   { value: "new_roof", label: "New Roof" },
@@ -39,10 +42,27 @@ const PRIORITIES = [
   { value: "emergency", label: "Emergency" },
 ];
 
+const CONDITION_OPTIONS = [
+  { value: "new", label: "New / No existing damage" },
+  { value: "good", label: "Good — Minor wear" },
+  { value: "fair", label: "Fair — Moderate wear, some repairs needed" },
+  { value: "poor", label: "Poor — Significant damage" },
+  { value: "critical", label: "Critical — Immediate replacement required" },
+];
+
+const DAMAGE_TYPES = [
+  "Storm / Hail", "Wind", "Water / Leak", "UV / Age", "Structural", "Missing Shingles", "Flashing Failure", "Gutter Damage", "Other"
+];
+
 export default function JobForm({ existingJob }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEditing = !!existingJob;
+
+  const { data: materials = [] } = useQuery({
+    queryKey: ["materials"],
+    queryFn: () => base44.entities.Material.list(),
+  });
 
   const [form, setForm] = useState(existingJob || {
     customer_name: "",
@@ -60,36 +80,68 @@ export default function JobForm({ existingJob }) {
     description: "",
     start_date: "",
     end_date: "",
+    // roof condition fields
+    roof_condition: "",
+    roof_age_years: "",
+    roof_area_sq_ft: "",
+    damage_types: [],
+    layers_count: "",
+    // line items
+    line_items: [],
+    discount_amount: 0,
   });
+
+  const [createdJob, setCreatedJob] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+  const toggleDamage = (type) => {
+    setForm(prev => ({
+      ...prev,
+      damage_types: prev.damage_types.includes(type)
+        ? prev.damage_types.filter(d => d !== type)
+        : [...prev.damage_types, type],
+    }));
+  };
+
+  const { subtotal, totalTax, total } = computeDocumentTotals(form.line_items, form.discount_amount, 0);
 
   const mutation = useMutation({
     mutationFn: (data) => {
       const payload = {
         ...data,
-        estimated_cost: data.estimated_cost ? Number(data.estimated_cost) : undefined,
+        estimated_cost: total > 0 ? total : (data.estimated_cost ? Number(data.estimated_cost) : undefined),
+        roof_age_years: data.roof_age_years ? Number(data.roof_age_years) : undefined,
+        roof_area_sq_ft: data.roof_area_sq_ft ? Number(data.roof_area_sq_ft) : undefined,
+        layers_count: data.layers_count ? Number(data.layers_count) : undefined,
       };
-      if (isEditing) {
-        return base44.entities.Job.update(existingJob.id, payload);
-      }
+      if (isEditing) return base44.entities.Job.update(existingJob.id, payload);
       return base44.entities.Job.create(payload);
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
-      toast.success(isEditing ? "Job updated!" : "New job created!");
-      navigate("/jobs");
+      if (isEditing) {
+        toast.success("Job updated!");
+        navigate("/jobs");
+      } else {
+        setCreatedJob(saved);
+        setShowModal(true);
+      }
     },
   });
 
-  const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  const hasLineItems = form.line_items.length > 0;
 
   return (
     <div>
-      <PageHeader 
-        title={isEditing ? "Edit Job" : "New Job Intake"} 
+      <PageHeader
+        title={isEditing ? "Edit Job" : "New Job Intake"}
         subtitle={isEditing ? "Update job details" : "Enter customer and job information"}
       />
 
       <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(form); }} className="space-y-6">
+
         {/* Customer Info */}
         <Card>
           <CardHeader><CardTitle className="text-base">Customer Information</CardTitle></CardHeader>
@@ -158,8 +210,8 @@ export default function JobForm({ existingJob }) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Estimated Cost ($)</Label>
-              <Input type="number" value={form.estimated_cost} onChange={e => update("estimated_cost", e.target.value)} placeholder="5000" />
+              <Label>Estimated Cost ($) <span className="text-xs text-muted-foreground">(auto-calculated from materials if added)</span></Label>
+              <Input type="number" value={total > 0 ? total.toFixed(2) : form.estimated_cost} readOnly={total > 0} onChange={e => update("estimated_cost", e.target.value)} placeholder="5000" className={total > 0 ? "bg-muted" : ""} />
             </div>
             <div className="space-y-2">
               <Label>Start Date</Label>
@@ -171,8 +223,90 @@ export default function JobForm({ existingJob }) {
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Description / Notes</Label>
-              <Textarea value={form.description} onChange={e => update("description", e.target.value)} placeholder="Describe the job scope, damage, special requirements..." rows={4} />
+              <Textarea value={form.description} onChange={e => update("description", e.target.value)} placeholder="Describe the job scope, damage, special requirements..." rows={3} />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Roof Condition Assessment */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Roof Condition Assessment</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label>Overall Condition</Label>
+              <Select value={form.roof_condition} onValueChange={v => update("roof_condition", v)}>
+                <SelectTrigger><SelectValue placeholder="Select condition..." /></SelectTrigger>
+                <SelectContent>
+                  {CONDITION_OPTIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Roof Age (years)</Label>
+              <Input type="number" min="0" value={form.roof_age_years} onChange={e => update("roof_age_years", e.target.value)} placeholder="e.g. 15" />
+            </div>
+            <div className="space-y-2">
+              <Label>Roof Area (sq ft)</Label>
+              <Input type="number" min="0" value={form.roof_area_sq_ft} onChange={e => update("roof_area_sq_ft", e.target.value)} placeholder="e.g. 2200" />
+            </div>
+            <div className="space-y-2">
+              <Label>Number of Existing Layers</Label>
+              <Select value={form.layers_count ? String(form.layers_count) : ""} onValueChange={v => update("layers_count", v)}>
+                <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 layer</SelectItem>
+                  <SelectItem value="2">2 layers</SelectItem>
+                  <SelectItem value="3">3+ layers</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Damage Types <span className="text-xs text-muted-foreground font-normal">(select all that apply)</span></Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {DAMAGE_TYPES.map(type => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => toggleDamage(type)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                      form.damage_types.includes(type)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:border-primary/50 text-foreground"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Materials & Labour */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Materials & Labour</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Add all materials and labour involved. These will be carried into any estimate or invoice you generate.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <LineItemsEditor
+              items={form.line_items}
+              onChange={v => update("line_items", v)}
+              materials={materials}
+            />
+            {hasLineItems && (
+              <div className="mt-6">
+                <DocumentTotals
+                  items={form.line_items}
+                  discountAmount={form.discount_amount}
+                  onDiscountChange={v => update("discount_amount", v)}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -184,6 +318,15 @@ export default function JobForm({ existingJob }) {
           </Button>
         </div>
       </form>
+
+      {createdJob && (
+        <PostJobModal
+          open={showModal}
+          onClose={() => { setShowModal(false); navigate("/jobs"); }}
+          job={createdJob}
+          lineItems={form.line_items}
+        />
+      )}
     </div>
   );
 }

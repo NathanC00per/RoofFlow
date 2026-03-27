@@ -14,6 +14,10 @@
       "type": "string",
       "description": "Customer email address"
     },
+    "customer_id": {
+      "type": "string",
+      "description": "Optional reference to Customer entity"
+    },
     "address": {
       "type": "string",
       "description": "Job site address"
@@ -108,6 +112,78 @@
         "type": "string"
       },
       "description": "Photo URLs of the job site"
+    },
+    "roof_condition": {
+      "type": "string",
+      "enum": [
+        "new",
+        "good",
+        "fair",
+        "poor",
+        "critical"
+      ],
+      "description": "Overall roof condition at intake"
+    },
+    "roof_age_years": {
+      "type": "number",
+      "description": "Age of the existing roof in years"
+    },
+    "roof_area_sq_ft": {
+      "type": "number",
+      "description": "Total roof area in square feet"
+    },
+    "layers_count": {
+      "type": "number",
+      "description": "Number of existing roofing layers"
+    },
+    "damage_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Types of damage present"
+    },
+    "line_items": {
+      "type": "array",
+      "description": "Materials and labour line items captured at intake",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "material",
+              "labor",
+              "other"
+            ]
+          },
+          "material_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_price": {
+            "type": "number"
+          },
+          "tax_rate": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [
