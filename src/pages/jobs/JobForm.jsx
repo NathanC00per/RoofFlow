@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import PageHeader from "@/components/shared/PageHeader";
 import { Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import CustomerPicker from "@/components/jobs/CustomerPicker";
 
 const JOB_TYPES = [
   { value: "new_roof", label: "New Roof" },
@@ -93,18 +94,10 @@ export default function JobForm({ existingJob }) {
         <Card>
           <CardHeader><CardTitle className="text-base">Customer Information</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Customer Name *</Label>
-              <Input value={form.customer_name} onChange={e => update("customer_name", e.target.value)} placeholder="John Smith" required />
-            </div>
-            <div className="space-y-2">
-              <Label>Phone</Label>
-              <Input value={form.customer_phone} onChange={e => update("customer_phone", e.target.value)} placeholder="(555) 123-4567" />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Email</Label>
-              <Input type="email" value={form.customer_email} onChange={e => update("customer_email", e.target.value)} placeholder="john@example.com" />
-            </div>
+            <CustomerPicker
+              value={{ customer_name: form.customer_name, customer_phone: form.customer_phone, customer_email: form.customer_email }}
+              onChange={(patch) => setForm(prev => ({ ...prev, ...patch }))}
+            />
           </CardContent>
         </Card>
 
