@@ -5,14 +5,15 @@ import {
   PlusCircle, 
   Users, 
   Clock, 
-  HardHat,
   ChevronLeft,
   ChevronRight,
   Package,
   FileText,
   Receipt,
   BarChart2,
-  Wallet
+  Wallet,
+  Settings,
+  HardHat
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,12 @@ const navGroups = [
       { label: "Invoices", path: "/invoices", icon: Receipt },
       { label: "Expenses", path: "/expenses", icon: Wallet },
       { label: "Materials", path: "/materials", icon: Package },
+    ]
+  },
+  {
+    label: "Settings",
+    items: [
+      { label: "Templates", path: "/settings/templates", icon: Settings },
     ]
   }
 ];

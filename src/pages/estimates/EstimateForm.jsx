@@ -9,18 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LineItemsEditor from "@/components/documents/LineItemsEditor";
-import DocumentTotals from "@/components/documents/DocumentTotals";
+import DocumentTotals, { computeDocumentTotals } from "@/components/documents/DocumentTotals";
 import PageHeader from "@/components/shared/PageHeader";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-
-function calcTotals(items, taxRate, discount) {
-  const subtotal = items.reduce((s, i) => s + ((i.quantity || 0) * (i.unit_price || 0)), 0);
-  const taxAmount = subtotal * ((taxRate || 0) / 100);
-  const total = subtotal + taxAmount - (discount || 0);
-  return { subtotal, taxAmount, total };
-}
 
 export default function EstimateForm({ existing }) {
   const navigate = useNavigate();
@@ -39,7 +32,6 @@ export default function EstimateForm({ existing }) {
     expiry_date: "",
     notes: "",
     internal_notes: "",
-    tax_rate: 0,
     discount_amount: 0,
     line_items: [],
   });
@@ -55,11 +47,11 @@ export default function EstimateForm({ existing }) {
 
   const update = (f, v) => setForm(p => ({ ...p, [f]: v }));
 
-  const { subtotal, taxAmount, total } = calcTotals(form.line_items, form.tax_rate, form.discount_amount);
+  const { subtotal, taxBreakdown, totalTax, total } = computeDocumentTotals(form.line_items, form.discount_amount, 0);
 
   const mutation = useMutation({
     mutationFn: (data) => {
-      const payload = { ...data, subtotal, tax_amount: taxAmount, total };
+      const payload = { ...data, subtotal, tax_amount: totalTax, total };
       return isEditing ? base44.entities.Estimate.update(existing.id, payload) : base44.entities.Estimate.create(payload);
     },
     onSuccess: (saved) => {
@@ -127,9 +119,7 @@ export default function EstimateForm({ existing }) {
             <LineItemsEditor items={form.line_items} onChange={v => update("line_items", v)} materials={materials} />
             <div className="mt-6">
               <DocumentTotals
-                subtotal={subtotal}
-                taxRate={form.tax_rate}
-                onTaxRateChange={v => update("tax_rate", v)}
+                items={form.line_items}
                 discountAmount={form.discount_amount}
                 onDiscountChange={v => update("discount_amount", v)}
               />

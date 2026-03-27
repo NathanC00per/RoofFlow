@@ -23,6 +23,7 @@ import InvoiceDetail from './pages/invoices/InvoiceDetail';
 import InvoiceEdit from './pages/invoices/InvoiceEdit';
 import FinanceDashboard from './pages/finance/FinanceDashboard';
 import Expenses from './pages/finance/Expenses';
+import Templates from './pages/settings/Templates';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
         <Route path="/invoices/:id" element={<InvoiceDetail />} />
         <Route path="/finance" element={<FinanceDashboard />} />
         <Route path="/expenses" element={<Expenses />} />
+        <Route path="/settings/templates" element={<Templates />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

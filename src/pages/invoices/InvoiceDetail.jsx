@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/shared/PageHeader";
-import { ArrowLeft, Pencil, Trash2, ArrowRight, FileText, Phone, Mail, MapPin } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, ArrowRight, FileText, Phone, Mail, MapPin, Download } from "lucide-react";
+import { generateDocumentPDF } from "@/lib/generatePDF";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -81,6 +82,12 @@ export default function InvoiceDetail() {
             ))}
           </SelectContent>
         </Select>
+        <Button variant="outline" size="sm" onClick={() => {
+          const tpl = (() => { try { return JSON.parse(localStorage.getItem("doc_template_settings") || "{}"); } catch { return {}; } })();
+          generateDocumentPDF({ type: "INVOICE", doc: invoice, job, template: tpl });
+        }}>
+          <Download className="w-4 h-4 mr-2" /> Download PDF
+        </Button>
         <Link to={`/invoices/${invoiceId}/edit`}>
           <Button variant="outline" size="icon"><Pencil className="w-4 h-4" /></Button>
         </Link>

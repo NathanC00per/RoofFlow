@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/shared/PageHeader";
-import { ArrowLeft, Pencil, Trash2, FileText, ArrowRight, FilePlus } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, FileText, ArrowRight, FilePlus, Download } from "lucide-react";
+import { generateDocumentPDF } from "@/lib/generatePDF";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -105,6 +106,12 @@ export default function EstimateDetail() {
       >
         <Button variant="outline" size="sm" onClick={() => convertMutation.mutate()} disabled={convertMutation.isPending}>
           <FilePlus className="w-4 h-4 mr-2" /> Convert to Invoice
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => {
+          const tpl = (() => { try { return JSON.parse(localStorage.getItem("doc_template_settings") || "{}"); } catch { return {}; } })();
+          generateDocumentPDF({ type: "ESTIMATE", doc: estimate, job, template: tpl });
+        }}>
+          <Download className="w-4 h-4 mr-2" /> Download PDF
         </Button>
         <Select value={estimate.status} onValueChange={v => statusMutation.mutate(v)}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>

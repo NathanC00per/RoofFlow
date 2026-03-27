@@ -9,18 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LineItemsEditor from "@/components/documents/LineItemsEditor";
-import DocumentTotals from "@/components/documents/DocumentTotals";
+import DocumentTotals, { computeDocumentTotals } from "@/components/documents/DocumentTotals";
 import PageHeader from "@/components/shared/PageHeader";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { toast } from "sonner";
-
-function calcTotals(items, taxRate, discount) {
-  const subtotal = items.reduce((s, i) => s + ((i.quantity || 0) * (i.unit_price || 0)), 0);
-  const taxAmount = subtotal * ((taxRate || 0) / 100);
-  const total = subtotal + taxAmount - (discount || 0);
-  return { subtotal, taxAmount, total };
-}
 
 export default function InvoiceForm({ existing }) {
   const navigate = useNavigate();
@@ -39,7 +32,6 @@ export default function InvoiceForm({ existing }) {
     due_date: format(addDays(new Date(), 30), "yyyy-MM-dd"),
     payment_terms: "Net 30",
     notes: "",
-    tax_rate: 0,
     discount_amount: 0,
     amount_paid: 0,
     line_items: [],
@@ -52,12 +44,11 @@ export default function InvoiceForm({ existing }) {
   }, [allInvoices.length]);
 
   const update = (f, v) => setForm(p => ({ ...p, [f]: v }));
-  const { subtotal, taxAmount, total } = calcTotals(form.line_items, form.tax_rate, form.discount_amount);
-  const balanceDue = total - (form.amount_paid || 0);
+  const { subtotal, totalTax, total, balanceDue } = computeDocumentTotals(form.line_items, form.discount_amount, form.amount_paid || 0);
 
   const mutation = useMutation({
     mutationFn: (data) => {
-      const payload = { ...data, subtotal, tax_amount: taxAmount, total, balance_due: balanceDue };
+      const payload = { ...data, subtotal, tax_amount: totalTax, total, balance_due: balanceDue };
       return isEditing ? base44.entities.Invoice.update(existing.id, payload) : base44.entities.Invoice.create(payload);
     },
     onSuccess: (saved) => {
@@ -123,9 +114,7 @@ export default function InvoiceForm({ existing }) {
             <LineItemsEditor items={form.line_items} onChange={v => update("line_items", v)} materials={materials} />
             <div className="mt-6">
               <DocumentTotals
-                subtotal={subtotal}
-                taxRate={form.tax_rate}
-                onTaxRateChange={v => update("tax_rate", v)}
+                items={form.line_items}
                 discountAmount={form.discount_amount}
                 onDiscountChange={v => update("discount_amount", v)}
                 showPayment
