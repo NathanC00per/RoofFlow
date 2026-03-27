@@ -12,9 +12,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { TimesheetStatusBadge } from "@/components/shared/StatusBadge";
 import PageHeader from "@/components/shared/PageHeader";
-import { PlusCircle, Check, X, Clock, Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { PlusCircle, Check, X, Clock, Pencil, Trash2, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { calculateAllPay } from "@/lib/wageCalculator";
+import { isBankHoliday, getBankHolidayName } from "@/lib/bankHolidays";
 
 function calculateHours(clockIn, clockOut, breakMins) {
   if (!clockIn || !clockOut) return 0;
@@ -63,19 +65,38 @@ export default function Timesheets() {
   const activeEmployees = employees.filter(e => e.status === "active");
   const activeJobs = jobs.filter(j => !["completed", "cancelled"].includes(j.status));
 
+  // ── Pay calculations (derived, not stored until save) ──
+  const payMap = useMemo(() => calculateAllPay(timesheets, employees), [timesheets, employees]);
+
   // ── Mutations ──
   const saveMutation = useMutation({
     mutationFn: (data) => {
       const emp = employees.find(e => e.id === data.employee_id);
       const job = jobs.find(j => j.id === data.job_id);
       const hours = calculateHours(data.clock_in, data.clock_out, Number(data.break_minutes));
+      const isHoliday = isBankHoliday(data.date || "");
+      const hourlyRate = emp?.hourly_rate || 0;
+      const tempId = editingTs?.id || "__new__";
+
       const payload = {
         ...data,
         employee_name: emp ? `${emp.first_name} ${emp.last_name}` : data.employee_name || "",
         job_address: job?.address || data.job_address || "",
         hours,
         break_minutes: Number(data.break_minutes) || 0,
+        is_bank_holiday: isHoliday,
+        hourly_rate: hourlyRate,
       };
+
+      // Recalculate pay in context of the full employee week
+      const allForEmployee = [
+        ...timesheets.filter(t => t.employee_id === data.employee_id && t.id !== tempId),
+        { ...payload, id: tempId }
+      ];
+      const weekPayMap = calculateAllPay(allForEmployee, employees);
+      const payDetails = weekPayMap.get(tempId) || {};
+      Object.assign(payload, payDetails);
+
       if (editingTs) return base44.entities.Timesheet.update(editingTs.id, payload);
       return base44.entities.Timesheet.create({ ...payload, status: "pending" });
     },
@@ -156,6 +177,11 @@ export default function Timesheets() {
   }), [timesheets, statusFilter, employeeFilter, jobFilter, dateFrom, dateTo]);
 
   const totalHours = filtered.reduce((s, t) => s + (t.hours || 0), 0);
+  const totalWageCost = filtered.reduce((s, t) => {
+    const pay = payMap.get(t.id);
+    return s + (pay?.wage_cost ?? t.wage_cost ?? 0);
+  }, 0);
+  const fmt = (n) => "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // ── Selection helpers ──
   const allSelected = filtered.length > 0 && filtered.every(t => selected.has(t.id));
@@ -179,7 +205,7 @@ export default function Timesheets() {
 
   return (
     <div>
-      <PageHeader title="Timesheets" subtitle={`${filtered.length} entries · ${totalHours.toFixed(1)} hrs`}>
+      <PageHeader title="Timesheets" subtitle={`${filtered.length} entries · ${totalHours.toFixed(1)} hrs · ${fmt(totalWageCost)} total labour cost`}>
         <Button onClick={openCreate}><PlusCircle className="w-4 h-4 mr-2" /> Log Time</Button>
       </PageHeader>
 
@@ -278,26 +304,55 @@ export default function Timesheets() {
                   <TableHead>Job Site</TableHead>
                   <TableHead>Clock In</TableHead>
                   <TableHead>Clock Out</TableHead>
-                  <TableHead>Break</TableHead>
                   <TableHead>Hours</TableHead>
+                  <TableHead>OT Hrs</TableHead>
+                  <TableHead>Rate</TableHead>
+                  <TableHead>Labour Cost</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(ts => (
-                  <TableRow key={ts.id} className={selected.has(ts.id) ? "bg-primary/5" : ""}>
-                    <TableCell>
-                      <Checkbox checked={selected.has(ts.id)} onCheckedChange={() => toggleOne(ts.id)} />
-                    </TableCell>
-                    <TableCell className="font-medium text-sm">{ts.employee_name || "—"}</TableCell>
-                    <TableCell className="text-sm">{ts.date ? format(new Date(ts.date), "MMM d, yyyy") : "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground truncate max-w-[140px]">{ts.job_address || "—"}</TableCell>
-                    <TableCell className="text-sm">{ts.clock_in || "—"}</TableCell>
-                    <TableCell className="text-sm">{ts.clock_out || "—"}</TableCell>
-                    <TableCell className="text-sm">{ts.break_minutes || 0}m</TableCell>
-                    <TableCell className="text-sm font-semibold">{ts.hours?.toFixed(1) || "—"}</TableCell>
-                    <TableCell><TimesheetStatusBadge status={ts.status} /></TableCell>
+                {filtered.map(ts => {
+                  const pay = payMap.get(ts.id);
+                  const wageCost = pay?.wage_cost ?? ts.wage_cost;
+                  const otHours = pay?.overtime_hours ?? ts.overtime_hours ?? 0;
+                  const isHoliday = pay?.is_bank_holiday ?? ts.is_bank_holiday ?? false;
+                  const rate = pay?.hourly_rate ?? ts.hourly_rate;
+                  return (
+                   <TableRow key={ts.id} className={selected.has(ts.id) ? "bg-primary/5" : ""}>
+                     <TableCell>
+                       <Checkbox checked={selected.has(ts.id)} onCheckedChange={() => toggleOne(ts.id)} />
+                     </TableCell>
+                     <TableCell className="font-medium text-sm">{ts.employee_name || "—"}</TableCell>
+                     <TableCell className="text-sm">
+                       <div className="flex items-center gap-1.5">
+                         {ts.date ? format(new Date(ts.date), "MMM d, yyyy") : "—"}
+                         {isHoliday && (
+                           <span title={getBankHolidayName(ts.date)} className="inline-flex items-center gap-0.5 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-1 py-0.5">
+                             <Star className="w-2.5 h-2.5" /> BH
+                           </span>
+                         )}
+                       </div>
+                     </TableCell>
+                     <TableCell className="text-sm text-muted-foreground truncate max-w-[120px]">{ts.job_address || "—"}</TableCell>
+                     <TableCell className="text-sm">{ts.clock_in || "—"}</TableCell>
+                     <TableCell className="text-sm">{ts.clock_out || "—"}</TableCell>
+                     <TableCell className="text-sm font-semibold">{ts.hours?.toFixed(1) || "—"}</TableCell>
+                     <TableCell className="text-sm">
+                       {otHours > 0
+                         ? <span className="text-orange-600 font-medium">{otHours.toFixed(1)}h</span>
+                         : <span className="text-muted-foreground">—</span>}
+                     </TableCell>
+                     <TableCell className="text-sm text-muted-foreground">
+                       {rate ? `$${rate}/hr` : "—"}
+                     </TableCell>
+                     <TableCell className="text-sm font-semibold">
+                       {wageCost != null
+                         ? <span className={isHoliday || otHours > 0 ? "text-amber-700" : ""}>{fmt(wageCost)}</span>
+                         : <span className="text-muted-foreground text-xs">No rate set</span>}
+                     </TableCell>
+                     <TableCell><TimesheetStatusBadge status={ts.status} /></TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(ts)}>
@@ -316,11 +371,12 @@ export default function Timesheets() {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteMutation.mutate(ts.id)}>
                           <Trash2 className="w-3.5 h-3.5 text-destructive/60" />
                         </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+                        </div>
+                        </TableCell>
+                        </TableRow>
+                        );
+                        })}
+                        </TableBody>
             </Table>
           </div>
         </Card>
@@ -375,11 +431,46 @@ export default function Timesheets() {
                 <Input type="number" value={form.break_minutes} onChange={e => update("break_minutes", e.target.value)} />
               </div>
             </div>
-            {form.clock_in && form.clock_out && (
-              <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
-                Calculated: <strong>{calculateHours(form.clock_in, form.clock_out, Number(form.break_minutes)).toFixed(2)}h</strong>
-              </p>
-            )}
+            {form.clock_in && form.clock_out && (() => {
+              const emp = employees.find(e => e.id === form.employee_id);
+              const hours = calculateHours(form.clock_in, form.clock_out, Number(form.break_minutes));
+              const isHoliday = isBankHoliday(form.date || "");
+              const tempId = editingTs?.id || "__new__";
+              const allForEmp = [
+                ...timesheets.filter(t => t.employee_id === form.employee_id && t.id !== tempId),
+                { employee_id: form.employee_id, id: tempId, date: form.date, hours, is_bank_holiday: isHoliday }
+              ];
+              const previewMap = calculateAllPay(allForEmp, employees);
+              const preview = previewMap.get(tempId);
+              return (
+                <div className="text-xs bg-muted/50 rounded px-3 py-2 space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Hours</span>
+                    <strong>{hours.toFixed(2)}h</strong>
+                  </div>
+                  {isHoliday && (
+                    <div className="flex justify-between text-amber-700">
+                      <span className="flex items-center gap-1"><Star className="w-3 h-3" /> Bank Holiday (x1.5)</span>
+                      <strong>{hours.toFixed(2)}h</strong>
+                    </div>
+                  )}
+                  {preview?.overtime_hours > 0 && (
+                    <div className="flex justify-between text-orange-700">
+                      <span>Overtime (x1.5)</span>
+                      <strong>{preview.overtime_hours.toFixed(2)}h</strong>
+                    </div>
+                  )}
+                  {preview?.wage_cost != null ? (
+                    <div className="flex justify-between border-t pt-1 font-semibold">
+                      <span>Est. Labour Cost</span>
+                      <span>{fmt(preview.wage_cost)}</span>
+                    </div>
+                  ) : emp && !emp.hourly_rate ? (
+                    <div className="text-amber-600">No hourly rate set for this employee</div>
+                  ) : null}
+                </div>
+              );
+            })()}
             <div className="space-y-1.5">
               <Label>Notes</Label>
               <Textarea value={form.notes} onChange={e => update("notes", e.target.value)} rows={2} />

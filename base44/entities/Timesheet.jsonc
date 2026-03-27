@@ -34,6 +34,28 @@
       "type": "number",
       "description": "Total hours worked"
     },
+    "regular_hours": {
+      "type": "number",
+      "description": "Regular (non-overtime) hours for this entry"
+    },
+    "overtime_hours": {
+      "type": "number",
+      "description": "Overtime hours for this entry (above 40h/week)",
+      "default": 0
+    },
+    "is_bank_holiday": {
+      "type": "boolean",
+      "description": "Whether this shift falls on a bank holiday",
+      "default": false
+    },
+    "hourly_rate": {
+      "type": "number",
+      "description": "Snapshot of employee hourly rate at time of entry"
+    },
+    "wage_cost": {
+      "type": "number",
+      "description": "Calculated wage cost for this entry (inc. overtime/holiday premiums)"
+    },
     "break_minutes": {
       "type": "number",
       "description": "Break time in minutes",

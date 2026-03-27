@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Users, Clock, Timer } from "lucide-react";
+import { Users, Timer, Star } from "lucide-react";
 import { format } from "date-fns";
 import { TimesheetStatusBadge } from "@/components/shared/StatusBadge";
+
+const fmt = (n) => "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function JobWorkforce({ timesheets = [], employees = [] }) {
   const employeeMap = useMemo(() => {
@@ -16,6 +17,9 @@ export default function JobWorkforce({ timesheets = [], employees = [] }) {
   const active = timesheets.filter(t => t.clock_in && !t.clock_out);
 
   const totalHours = completed.reduce((s, t) => s + (t.hours || 0), 0);
+  const totalOvertimeHours = timesheets.reduce((s, t) => s + (t.overtime_hours || 0), 0);
+  const totalLabourCost = timesheets.reduce((s, t) => s + (t.wage_cost || 0), 0);
+  const hasBankHoliday = timesheets.some(t => t.is_bank_holiday);
 
   // Group by employee
   const byEmployee = useMemo(() => {
@@ -56,7 +60,7 @@ export default function JobWorkforce({ timesheets = [], employees = [] }) {
       </CardHeader>
       <CardContent className="space-y-5">
         {/* Summary row */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="rounded-lg bg-muted/40 p-3 text-center">
             <p className="text-xl font-bold">{totalHours.toFixed(1)}h</p>
             <p className="text-xs text-muted-foreground">Total Hours</p>
@@ -65,11 +69,21 @@ export default function JobWorkforce({ timesheets = [], employees = [] }) {
             <p className="text-xl font-bold">{workerCount}</p>
             <p className="text-xs text-muted-foreground">Workers</p>
           </div>
-          <div className={`rounded-lg p-3 text-center ${active.length > 0 ? "bg-emerald-50" : "bg-muted/40"}`}>
-            <p className={`text-xl font-bold ${active.length > 0 ? "text-emerald-600" : ""}`}>{active.length}</p>
-            <p className="text-xs text-muted-foreground">On-site Now</p>
+          <div className={`rounded-lg p-3 text-center ${totalOvertimeHours > 0 ? "bg-orange-50" : "bg-muted/40"}`}>
+            <p className={`text-xl font-bold ${totalOvertimeHours > 0 ? "text-orange-600" : ""}`}>{totalOvertimeHours.toFixed(1)}h</p>
+            <p className="text-xs text-muted-foreground">Overtime Hrs</p>
+          </div>
+          <div className={`rounded-lg p-3 text-center ${totalLabourCost > 0 ? "bg-primary/5" : "bg-muted/40"}`}>
+            <p className="text-lg font-bold text-primary">{totalLabourCost > 0 ? fmt(totalLabourCost) : "—"}</p>
+            <p className="text-xs text-muted-foreground">Labour Cost</p>
           </div>
         </div>
+        {hasBankHoliday && (
+          <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <Star className="w-3.5 h-3.5 flex-shrink-0" />
+            Some shifts include bank holiday pay (×1.5 rate)
+          </div>
+        )}
 
         {/* Active shifts */}
         {active.length > 0 && (
@@ -101,15 +115,18 @@ export default function JobWorkforce({ timesheets = [], employees = [] }) {
                   .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
                   .map(t => (
                     <div key={t.id} className="flex items-center justify-between px-3 py-2 text-xs">
-                      <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-muted-foreground">
                           {t.date ? format(new Date(t.date), "EEE MMM d") : "—"}
                         </span>
-                        <span className="mx-2 text-muted-foreground/50">·</span>
+                        {t.is_bank_holiday && <span title="Bank Holiday" className="text-amber-600"><Star className="w-3 h-3" /></span>}
+                        <span className="text-muted-foreground/50">·</span>
                         <span>{t.clock_in || "?"} – {t.clock_out || <span className="text-emerald-600 font-medium">Active</span>}</span>
+                        {t.overtime_hours > 0 && <span className="text-orange-600 font-medium">OT: {t.overtime_hours.toFixed(1)}h</span>}
                       </div>
                       <div className="flex items-center gap-2">
                         {t.hours ? <span className="font-medium">{t.hours.toFixed(1)}h</span> : null}
+                        {t.wage_cost > 0 && <span className="text-primary font-medium">{fmt(t.wage_cost)}</span>}
                         <TimesheetStatusBadge status={t.status} />
                       </div>
                     </div>

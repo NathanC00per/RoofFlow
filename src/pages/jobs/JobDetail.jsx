@@ -205,7 +205,7 @@ export default function JobDetail() {
           <JobLineItems job={job} />
 
           {/* Financial overview */}
-          <JobFinancials job={job} invoices={invoices} expenses={expenses} />
+          <JobFinancials job={job} invoices={invoices} expenses={expenses} timesheets={jobTimesheets} />
 
           {/* Workforce / timesheets */}
           <JobWorkforce timesheets={jobTimesheets} employees={employees} />

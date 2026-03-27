@@ -13,7 +13,7 @@ function Stat({ label, value, sub, highlight }) {
   );
 }
 
-export default function JobFinancials({ job, invoices = [], expenses = [] }) {
+export default function JobFinancials({ job, invoices = [], expenses = [], timesheets = [] }) {
   const fmt = (n) => `$${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const jobInvoices = invoices.filter(inv => inv.job_id === job.id);
@@ -27,9 +27,10 @@ export default function JobFinancials({ job, invoices = [], expenses = [] }) {
   const estimatedFromLineItems = (job.line_items || []).reduce((s, li) => s + (li.total || (li.quantity || 0) * (li.unit_price || 0)), 0);
   const estimatedCost = estimatedFromLineItems > 0 ? estimatedFromLineItems : (job.estimated_cost || 0);
 
-  // Actual cost = recorded expenses + actual_cost field
+  // Actual cost = recorded expenses + labour (timesheet wage costs) + actual_cost field
   const expensesTotal = jobExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-  const actualCost = expensesTotal + (job.actual_cost || 0);
+  const labourCost = timesheets.filter(t => t.job_id === job.id).reduce((s, t) => s + (t.wage_cost || 0), 0);
+  const actualCost = expensesTotal + labourCost + (job.actual_cost || 0);
 
   // Profit = revenue collected - actual costs
   const grossProfit = amountPaid - actualCost;
@@ -52,7 +53,7 @@ export default function JobFinancials({ job, invoices = [], expenses = [] }) {
           <Stat label="Invoiced" value={fmt(invoicedTotal)} sub={`${jobInvoices.length} invoice${jobInvoices.length !== 1 ? "s" : ""}`} />
           <Stat label="Collected" value={fmt(amountPaid)} sub={outstanding > 0 ? `${fmt(outstanding)} outstanding` : "Fully paid"} highlight />
           <Stat label="Est. Cost" value={fmt(estimatedCost)} sub={estimatedFromLineItems > 0 ? "From line items" : "From job estimate"} />
-          <Stat label="Actual Cost" value={fmt(actualCost)} sub={`${fmt(expensesTotal)} logged expenses`} />
+          <Stat label="Actual Cost" value={fmt(actualCost)} sub={`${fmt(expensesTotal)} expenses + ${fmt(labourCost)} labour`} />
         </div>
 
         {/* Budget variance */}
