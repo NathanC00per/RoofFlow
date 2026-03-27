@@ -14,7 +14,9 @@ import {
   Wallet,
   Settings,
   HardHat,
-  Building2
+  Building2,
+  Kanban,
+  UserCircle
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,7 @@ const navGroups = [
     label: "Operations",
     items: [
       { label: "Dashboard", path: "/", icon: LayoutDashboard },
+      { label: "Job Board", path: "/job-dashboard", icon: Kanban },
       { label: "New Job", path: "/jobs/new", icon: PlusCircle },
       { label: "All Jobs", path: "/jobs", icon: Briefcase },
     ]
@@ -51,6 +54,7 @@ const navGroups = [
       { label: "Company Settings", path: "/settings/company", icon: Building2 },
       { label: "Templates", path: "/settings/templates", icon: Settings },
       { label: "VAT Tracker", path: "/settings/vat", icon: Receipt },
+      { label: "Customer Portal", path: "/customer", icon: UserCircle },
     ]
   }
 ];
