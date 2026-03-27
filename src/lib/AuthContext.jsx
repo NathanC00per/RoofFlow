@@ -15,6 +15,12 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAppState();
+    // Safety timeout: if still loading after 8s, force unblock
+    const timeout = setTimeout(() => {
+      setIsLoadingPublicSettings(false);
+      setIsLoadingAuth(false);
+    }, 8000);
+    return () => clearTimeout(timeout);
   }, []);
 
   const checkAppState = async () => {

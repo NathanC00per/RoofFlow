@@ -53,6 +53,9 @@ const AuthenticatedApp = () => {
       // Redirect to login automatically
       navigateToLogin();
       return null;
+    } else {
+      // Unknown error — still render the app to avoid blank screen
+      console.warn('Auth error (non-blocking):', authError);
     }
   }
 
