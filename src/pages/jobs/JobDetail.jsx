@@ -15,6 +15,7 @@ import JobFinancials from "@/components/jobs/JobFinancials";
 import JobWorkforce from "@/components/jobs/JobWorkforce";
 import JobRoofAssessment from "@/components/jobs/JobRoofAssessment";
 import JobLineItems from "@/components/jobs/JobLineItems";
+import CustomFieldsDisplay from "@/components/jobs/CustomFieldsDisplay";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -197,6 +198,9 @@ export default function JobDetail() {
               </CardContent>
             </Card>
           )}
+
+          {/* Custom fields from template */}
+          <CustomFieldsDisplay job={job} />
 
           {/* Roof assessment */}
           <JobRoofAssessment job={job} />

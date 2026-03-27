@@ -18,7 +18,8 @@ import {
   Kanban,
   UserCircle,
   Lock,
-  Timer
+  Timer,
+  LayoutTemplate
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -62,7 +63,8 @@ const navGroups = [
     label: "Settings",
     items: [
       { label: "Company Settings", path: "/settings/company", icon: Building2 },
-      { label: "Templates", path: "/settings/templates", icon: Settings },
+      { label: "Doc Templates", path: "/settings/templates", icon: Settings },
+      { label: "Job Templates", path: "/settings/templates/jobs", icon: LayoutTemplate },
       { label: "VAT Tracker", path: "/settings/vat", icon: Receipt },
     ]
   }

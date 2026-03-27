@@ -13,7 +13,8 @@ import LineItemsEditor from "@/components/documents/LineItemsEditor";
 import DocumentTotals, { computeDocumentTotals } from "@/components/documents/DocumentTotals";
 import CustomerPicker from "@/components/jobs/CustomerPicker";
 import PostJobModal from "@/components/jobs/PostJobModal";
-import { Save, Loader2 } from "lucide-react";
+import CustomFieldsSection from "@/components/jobs/CustomFieldsSection";
+import { Save, Loader2, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
 
 const JOB_TYPES = [
@@ -64,6 +65,11 @@ export default function JobForm({ existingJob }) {
     queryFn: () => base44.entities.Material.list(),
   });
 
+  const { data: jobTemplates = [] } = useQuery({
+    queryKey: ["job-templates"],
+    queryFn: () => base44.entities.JobTemplate.list(),
+  });
+
   const [form, setForm] = useState(existingJob || {
     customer_name: "",
     customer_phone: "",
@@ -89,12 +95,32 @@ export default function JobForm({ existingJob }) {
     // line items
     line_items: [],
     discount_amount: 0,
+    // template & custom fields
+    template_id: "",
+    template_name: "",
+    custom_fields: [],
   });
 
   const [createdJob, setCreatedJob] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+  const handleTemplateChange = (templateId) => {
+    if (!templateId) {
+      setForm(prev => ({ ...prev, template_id: "", template_name: "", custom_fields: [] }));
+      return;
+    }
+    const tpl = jobTemplates.find(t => t.id === templateId);
+    if (!tpl) return;
+    // Build empty custom field values from template fields
+    const custom_fields = (tpl.fields || []).map(f => ({
+      field_id: f.id, label: f.label, type: f.type, value: f.type === "photo" ? [] : ""
+    }));
+    setForm(prev => ({ ...prev, template_id: tpl.id, template_name: tpl.name, custom_fields }));
+  };
+
+  const selectedTemplate = jobTemplates.find(t => t.id === form.template_id);
 
   const toggleDamage = (type) => {
     setForm(prev => ({
@@ -225,6 +251,45 @@ export default function JobForm({ existingJob }) {
               <Label>Description / Notes</Label>
               <Textarea value={form.description} onChange={e => update("description", e.target.value)} placeholder="Describe the job scope, damage, special requirements..." rows={3} />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Template Selector */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <LayoutTemplate className="w-4 h-4 text-primary" />
+              Job Template
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Select a template to capture additional custom fields specific to this roof type or job scope.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Template</Label>
+              <Select value={form.template_id || "none"} onValueChange={v => handleTemplateChange(v === "none" ? "" : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No template selected" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— No template —</SelectItem>
+                  {jobTemplates.map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {jobTemplates.length === 0 && (
+                <p className="text-xs text-muted-foreground">No templates yet. Create them in <a href="/settings/templates/jobs" className="underline text-primary">Settings → Job Templates</a>.</p>
+              )}
+            </div>
+            {selectedTemplate && (
+              <CustomFieldsSection
+                fields={selectedTemplate.fields || []}
+                values={form.custom_fields || []}
+                onChange={v => update("custom_fields", v)}
+              />
+            )}
           </CardContent>
         </Card>
 

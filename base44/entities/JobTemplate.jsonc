@@ -1,0 +1,64 @@
+{
+  "name": "JobTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Template name e.g. Flat Roof, Metal Roof, Full Survey"
+    },
+    "description": {
+      "type": "string"
+    },
+    "job_type": {
+      "type": "string",
+      "description": "Suggested job type this template applies to"
+    },
+    "fields": {
+      "type": "array",
+      "description": "Custom field definitions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "number",
+              "textarea",
+              "select",
+              "date",
+              "photo"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "For select fields"
+          },
+          "required": {
+            "type": "boolean",
+            "default": false
+          },
+          "placeholder": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

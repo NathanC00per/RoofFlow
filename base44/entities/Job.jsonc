@@ -184,6 +184,33 @@
     "discount_amount": {
       "type": "number",
       "default": 0
+    },
+    "template_id": {
+      "type": "string",
+      "description": "Reference to JobTemplate used for this job"
+    },
+    "template_name": {
+      "type": "string",
+      "description": "Denormalized template name"
+    },
+    "custom_fields": {
+      "type": "array",
+      "description": "Custom field values from the selected template",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "value": {}
+        }
+      }
     }
   },
   "required": [
