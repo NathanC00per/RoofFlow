@@ -32,17 +32,59 @@ function minutesToPercent(mins) {
   return ((mins - start) / total) * 100;
 }
 
-function CalendarBlock({ entry, onEdit, onDelete, dayIndex }) {
+// Compute non-overlapping column layout for a set of day entries.
+// Returns array of { entry, col, totalCols } so each entry gets its own horizontal slot.
+function computeColumns(entries) {
+  // Sort by start time
+  const sorted = [...entries].map(e => ({
+    e,
+    start: timeToMinutes(e.start_time),
+    end: timeToMinutes(e.end_time || "18:00"),
+  })).sort((a, b) => a.start - b.start);
+
+  const cols = []; // each col is array of items placed there
+
+  for (const item of sorted) {
+    // Find first column where last entry doesn't overlap
+    let placed = false;
+    for (const col of cols) {
+      const last = col[col.length - 1];
+      if (last.end <= item.start) {
+        col.push(item);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) cols.push([item]);
+  }
+
+  // Assign col index and total cols to each item
+  const result = new Map();
+  cols.forEach((col, colIdx) => {
+    col.forEach(item => {
+      result.set(item.e.id, { col: colIdx, totalCols: cols.length });
+    });
+  });
+  return result;
+}
+
+function CalendarBlock({ entry, onEdit, onDelete, col, totalCols }) {
   const top = minutesToPercent(timeToMinutes(entry.start_time));
   const bottom = minutesToPercent(timeToMinutes(entry.end_time));
   const height = Math.max(bottom - top, 4);
 
+  const gapPx = 2;
+  const widthPct = 100 / totalCols;
+  const leftPct = col * widthPct;
+
   return (
     <div
-      className="absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer overflow-hidden shadow-sm border border-white/20 group"
+      className="absolute rounded-lg px-2 py-1 cursor-pointer overflow-hidden shadow-sm border border-white/20 group"
       style={{
         top: `${top}%`,
         height: `${height}%`,
+        left: `calc(${leftPct}% + ${gapPx}px)`,
+        width: `calc(${widthPct}% - ${gapPx * 2}px)`,
         backgroundColor: entry.color || "#3b82f6",
         minHeight: "36px",
       }}
@@ -234,6 +276,7 @@ export default function Schedule() {
           {/* Day columns */}
           {weekDays.map((day, idx) => {
             const dayEntries = weekSchedules.filter(s => isSameDay(parseISO(s.date), day));
+            const colLayout = computeColumns(dayEntries);
             const isDragOver = dragOverDay && isSameDay(dragOverDay, day);
 
             return (
@@ -265,22 +308,26 @@ export default function Schedule() {
 
                   {/* Entries */}
                   <div className="absolute inset-0 pointer-events-none">
-                    {dayEntries.map(entry => (
-                      <div
-                        key={entry.id}
-                        className="pointer-events-auto"
-                        draggable
-                        onDragStart={() => handleDragStart(entry)}
-                        onDragEnd={() => { setDraggingEntry(null); setDragOverDay(null); }}
-                      >
-                        <CalendarBlock
-                          entry={entry}
-                          dayIndex={idx}
-                          onEdit={openEditModal}
-                          onDelete={(id) => deleteMutation.mutate(id)}
-                        />
-                      </div>
-                    ))}
+                    {dayEntries.map(entry => {
+                      const layout = colLayout.get(entry.id) || { col: 0, totalCols: 1 };
+                      return (
+                        <div
+                          key={entry.id}
+                          className="pointer-events-auto"
+                          draggable
+                          onDragStart={() => handleDragStart(entry)}
+                          onDragEnd={() => { setDraggingEntry(null); setDragOverDay(null); }}
+                        >
+                          <CalendarBlock
+                            entry={entry}
+                            col={layout.col}
+                            totalCols={layout.totalCols}
+                            onEdit={openEditModal}
+                            onDelete={(id) => deleteMutation.mutate(id)}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
