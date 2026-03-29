@@ -8,7 +8,7 @@ import { JobStatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import PageHeader from "@/components/shared/PageHeader";
 import {
   Pencil, Trash2, MapPin, Phone, Mail, Calendar, DollarSign,
-  ArrowLeft, FileText, Link2
+  ArrowLeft, FileText, Link2, Printer
 } from "lucide-react";
 import JobsMap from "@/components/maps/JobsMap";
 import JobFinancials from "@/components/jobs/JobFinancials";
@@ -16,6 +16,8 @@ import JobWorkforce from "@/components/jobs/JobWorkforce";
 import JobRoofAssessment from "@/components/jobs/JobRoofAssessment";
 import JobLineItems from "@/components/jobs/JobLineItems";
 import CustomFieldsDisplay from "@/components/jobs/CustomFieldsDisplay";
+import JobScheduleCard from "@/components/jobs/JobScheduleCard";
+import { generateCrewSheetPDF } from "@/lib/generateCrewSheet";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -79,6 +81,12 @@ export default function JobDetail() {
     queryFn: () => base44.entities.Estimate.list(),
   });
 
+  const { data: schedules = [] } = useQuery({
+    queryKey: ["schedules", jobId],
+    queryFn: () => base44.entities.Schedule.filter({ job_id: jobId }),
+    enabled: !!jobId,
+  });
+
   const statusMutation = useMutation({
     mutationFn: (newStatus) => base44.entities.Job.update(jobId, { status: newStatus }),
     onSuccess: async (_, newStatus) => {
@@ -132,6 +140,16 @@ export default function JobDetail() {
         title={job.customer_name}
         subtitle={`${JOB_TYPE_LABELS[job.job_type] || job.job_type} · Created ${format(new Date(job.created_date), "MMM d, yyyy")}`}
       >
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const company = (() => { try { return JSON.parse(localStorage.getItem("company_settings") || "{}"); } catch { return {}; } })();
+            generateCrewSheetPDF({ job, schedules, employees, company });
+          }}
+        >
+          <Printer className="w-4 h-4 mr-2" /> Crew Sheet
+        </Button>
         <Select value={job.status} onValueChange={(v) => statusMutation.mutate(v)}>
           <SelectTrigger className="w-48">
             <SelectValue />
@@ -232,6 +250,9 @@ export default function JobDetail() {
 
         {/* ── Right sidebar ── */}
         <div className="space-y-6">
+
+          {/* Schedule */}
+          <JobScheduleCard jobId={jobId} />
 
           {/* Customer */}
           <Card>

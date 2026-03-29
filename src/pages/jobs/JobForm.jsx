@@ -168,6 +168,37 @@ export default function JobForm({ existingJob }) {
 
       <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(form); }} className="space-y-6">
 
+        {/* Template Selector — shown first for new jobs */}
+        {!isEditing && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <LayoutTemplate className="w-4 h-4 text-primary" />
+                Job Template <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Select a template to pre-fill custom fields for this type of job.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <Select value={form.template_id || "none"} onValueChange={v => handleTemplateChange(v === "none" ? "" : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="— No template —" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— No template —</SelectItem>
+                  {jobTemplates.map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}{t.job_type ? ` · ${t.job_type.replace("_", " ")}` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {jobTemplates.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-2">No templates yet. Create them in <a href="/settings/templates/jobs" className="underline text-primary">Settings → Job Templates</a>.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Customer Info */}
         <Card>
           <CardHeader><CardTitle className="text-base">Customer Information</CardTitle></CardHeader>
@@ -254,20 +285,35 @@ export default function JobForm({ existingJob }) {
           </CardContent>
         </Card>
 
-        {/* Template Selector */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <LayoutTemplate className="w-4 h-4 text-primary" />
-              Job Template
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Select a template to capture additional custom fields specific to this roof type or job scope.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Template</Label>
+        {/* Template custom fields (when editing, or when a template is selected) */}
+        {selectedTemplate && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <LayoutTemplate className="w-4 h-4 text-primary" />
+                {selectedTemplate.name} — Custom Fields
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CustomFieldsSection
+                fields={selectedTemplate.fields || []}
+                values={form.custom_fields || []}
+                onChange={v => update("custom_fields", v)}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Template selector shown inside form for edit mode */}
+        {isEditing && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <LayoutTemplate className="w-4 h-4 text-primary" />
+                Job Template
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <Select value={form.template_id || "none"} onValueChange={v => handleTemplateChange(v === "none" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="No template selected" />
@@ -279,19 +325,9 @@ export default function JobForm({ existingJob }) {
                   ))}
                 </SelectContent>
               </Select>
-              {jobTemplates.length === 0 && (
-                <p className="text-xs text-muted-foreground">No templates yet. Create them in <a href="/settings/templates/jobs" className="underline text-primary">Settings → Job Templates</a>.</p>
-              )}
-            </div>
-            {selectedTemplate && (
-              <CustomFieldsSection
-                fields={selectedTemplate.fields || []}
-                values={form.custom_fields || []}
-                onChange={v => update("custom_fields", v)}
-              />
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Roof Condition Assessment */}
         <Card>
