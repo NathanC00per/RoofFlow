@@ -8,7 +8,7 @@ import { JobStatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import PageHeader from "@/components/shared/PageHeader";
 import {
   Pencil, Trash2, MapPin, Phone, Mail, Calendar, DollarSign,
-  ArrowLeft, FileText, Link2, Printer
+  ArrowLeft, FileText, Link2, Printer, Wrench
 } from "lucide-react";
 import JobsMap from "@/components/maps/JobsMap";
 import JobFinancials from "@/components/jobs/JobFinancials";
@@ -293,6 +293,20 @@ export default function JobDetail() {
                     </a>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Maintenance contract link */}
+          {job.maintenance_contract_id && (
+            <Card>
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><Wrench className="w-4 h-4 text-primary" />Maintenance Contract</CardTitle></CardHeader>
+              <CardContent>
+                <a href={`/maintenance/${job.maintenance_contract_id}`}
+                  className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/50 transition-colors text-sm">
+                  <span className="font-medium">{job.maintenance_contract_name || "View Contract"}</span>
+                  <span className="text-xs text-muted-foreground">View →</span>
+                </a>
               </CardContent>
             </Card>
           )}

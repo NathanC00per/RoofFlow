@@ -22,7 +22,8 @@ import {
   LayoutTemplate,
   MessageSquareMore,
   Bell,
-  CalendarDays
+  CalendarDays,
+  Wrench
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ const navGroups = [
       { label: "Job Board", path: "/job-dashboard", icon: Kanban },
       { label: "New Job", path: "/jobs/new", icon: PlusCircle },
       { label: "All Jobs", path: "/jobs", icon: Briefcase },
+      { label: "Maintenance", path: "/maintenance", icon: Wrench },
     ]
   },
   {

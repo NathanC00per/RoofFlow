@@ -1,0 +1,114 @@
+{
+  "name": "MaintenanceContract",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer entity"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "customer_email": {
+      "type": "string",
+      "description": "Denormalized customer email"
+    },
+    "customer_phone": {
+      "type": "string",
+      "description": "Denormalized customer phone"
+    },
+    "contract_name": {
+      "type": "string",
+      "description": "Descriptive name for this contract"
+    },
+    "description": {
+      "type": "string",
+      "description": "Scope of services included"
+    },
+    "service_address": {
+      "type": "string"
+    },
+    "service_city": {
+      "type": "string"
+    },
+    "service_state": {
+      "type": "string"
+    },
+    "service_zip": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "frequency": {
+      "type": "string",
+      "enum": [
+        "weekly",
+        "monthly",
+        "quarterly",
+        "bi-annually",
+        "annually"
+      ],
+      "description": "How often service visits occur"
+    },
+    "next_service_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the next service visit is due"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "expired",
+        "cancelled"
+      ],
+      "default": "active"
+    },
+    "estimated_cost_per_visit": {
+      "type": "number"
+    },
+    "roof_type": {
+      "type": "string",
+      "enum": [
+        "asphalt_shingle",
+        "metal",
+        "tile",
+        "flat",
+        "slate",
+        "wood_shake",
+        "other"
+      ]
+    },
+    "assigned_employee_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Default crew for visits"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "jobs_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "Total number of jobs generated from this contract"
+    }
+  },
+  "required": [
+    "customer_name",
+    "contract_name",
+    "start_date",
+    "frequency",
+    "next_service_date",
+    "service_address"
+  ]
+}

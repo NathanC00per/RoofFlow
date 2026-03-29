@@ -36,6 +36,9 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Schedule from './pages/Schedule';
 import Forum from './pages/Forum';
 import Notifications from './pages/Notifications';
+import MaintenanceContracts from './pages/maintenance/MaintenanceContracts';
+import MaintenanceContractForm from './pages/maintenance/MaintenanceContractForm';
+import MaintenanceContractDetail from './pages/maintenance/MaintenanceContractDetail';
 // v2026.03.27
 
 const AuthenticatedApp = () => {
@@ -90,6 +93,10 @@ const AuthenticatedApp = () => {
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/forum" element={<Forum />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/maintenance" element={<MaintenanceContracts />} />
+        <Route path="/maintenance/new" element={<MaintenanceContractForm />} />
+        <Route path="/maintenance/:id/edit" element={<MaintenanceContractForm />} />
+        <Route path="/maintenance/:id" element={<MaintenanceContractDetail />} />
       </Route>
       <Route path="/customer" element={<CustomerPortal />} />
       <Route path="*" element={<PageNotFound />} />

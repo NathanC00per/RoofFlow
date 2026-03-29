@@ -39,6 +39,7 @@
         "inspection",
         "gutter",
         "siding",
+        "maintenance",
         "other"
       ],
       "description": "Type of roofing job"
@@ -211,6 +212,14 @@
           "value": {}
         }
       }
+    },
+    "maintenance_contract_id": {
+      "type": "string",
+      "description": "Reference to MaintenanceContract if this job was generated from one"
+    },
+    "maintenance_contract_name": {
+      "type": "string",
+      "description": "Denormalized contract name"
     }
   },
   "required": [
