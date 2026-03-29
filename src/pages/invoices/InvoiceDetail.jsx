@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/shared/PageHeader";
 import { ArrowLeft, Pencil, Trash2, ArrowRight, FileText, Phone, Mail, MapPin, Download } from "lucide-react";
+import PaymentTracker from "@/components/invoices/PaymentTracker";
 import { generateDocumentPDF } from "@/lib/generatePDF";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -167,6 +168,8 @@ export default function InvoiceDetail() {
               <CardContent><p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p></CardContent>
             </Card>
           )}
+
+          <PaymentTracker invoice={invoice} job={job} />
         </div>
 
         {/* Sidebar */}
