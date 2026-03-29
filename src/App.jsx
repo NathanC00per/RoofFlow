@@ -33,6 +33,7 @@ import VatTracker from './pages/settings/VatTracker';
 import JobTemplates from './pages/settings/JobTemplates';
 import EmployeeClockIn from './pages/employee/EmployeeClockIn';
 import ErrorBoundary from './components/ErrorBoundary';
+import Schedule from './pages/Schedule';
 import Forum from './pages/Forum';
 import Notifications from './pages/Notifications';
 // v2026.03.27
@@ -86,6 +87,7 @@ const AuthenticatedApp = () => {
         <Route path="/settings/vat" element={<VatTracker />} />
         <Route path="/settings/templates/jobs" element={<JobTemplates />} />
         <Route path="/clock-in" element={<EmployeeClockIn />} />
+        <Route path="/schedule" element={<Schedule />} />
         <Route path="/forum" element={<Forum />} />
         <Route path="/notifications" element={<Notifications />} />
       </Route>

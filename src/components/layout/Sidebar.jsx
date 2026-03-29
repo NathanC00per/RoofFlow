@@ -21,7 +21,8 @@ import {
   Timer,
   LayoutTemplate,
   MessageSquareMore,
-  Bell
+  Bell,
+  CalendarDays
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ const navGroups = [
       { label: "Employees", path: "/employees", icon: Users },
       { label: "Timesheets", path: "/timesheets", icon: Clock },
       { label: "My Clock-In", path: "/clock-in", icon: Timer },
+      { label: "Schedule", path: "/schedule", icon: CalendarDays },
     ]
   },
   {

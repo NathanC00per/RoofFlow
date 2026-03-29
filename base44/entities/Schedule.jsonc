@@ -1,0 +1,66 @@
+{
+  "name": "Schedule",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "description": "Reference to Job"
+    },
+    "job_address": {
+      "type": "string",
+      "description": "Denormalized job address"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "employee_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Assigned employee IDs"
+    },
+    "employee_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Denormalized employee names"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Scheduled date"
+    },
+    "start_time": {
+      "type": "string",
+      "description": "Start time HH:mm"
+    },
+    "end_time": {
+      "type": "string",
+      "description": "End time HH:mm"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string",
+      "description": "Display color for calendar"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled"
+    }
+  },
+  "required": [
+    "job_id",
+    "date"
+  ]
+}
