@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
   ChevronLeft, ChevronRight, Plus, Trash2, Calendar,
-  Users, Clock, MoreHorizontal
+  Users, Clock, MoreHorizontal, GripVertical, Briefcase
 } from "lucide-react";
 import {
   addDays, subDays, startOfWeek, format, isSameDay,
@@ -129,6 +129,8 @@ export default function Schedule() {
   const [editingEntry, setEditingEntry] = useState(null);
   const [dragOverDay, setDragOverDay] = useState(null);
   const [draggingEntry, setDraggingEntry] = useState(null);
+  const [draggingJob, setDraggingJob] = useState(null); // unscheduled job being dragged
+  const [pendingJob, setPendingJob] = useState(null); // job to pre-select in modal
   const queryClient = useQueryClient();
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -194,6 +196,17 @@ export default function Schedule() {
   }
 
   function handleDrop(day) {
+    if (draggingJob) {
+      // Open modal pre-filled with this job for the dropped day
+      setSelectedDate(day);
+      setEditingEntry(null);
+      setModalOpen(true);
+      // Pre-select the job in modal via a ref trick — pass it as initialJob
+      setPendingJob(draggingJob);
+      setDraggingJob(null);
+      setDragOverDay(null);
+      return;
+    }
     if (!draggingEntry) return;
     const newDateStr = format(day, "yyyy-MM-dd");
     if (newDateStr !== draggingEntry.date) {
@@ -214,6 +227,19 @@ export default function Schedule() {
     const empIds = new Set(dayEntries.flatMap(e => e.employee_ids || []));
     return { day, count: empIds.size, total: employees.filter(e => e.status === "active").length };
   });
+
+  const scheduledJobIds = new Set(weekSchedules.map(s => s.job_id));
+  const unscheduledJobs = jobs.filter(j =>
+    ["approved", "scheduled", "in_progress", "lead", "estimate_sent"].includes(j.status)
+  );
+
+  const JOB_STATUS_COLORS = {
+    approved: "bg-emerald-100 text-emerald-700",
+    scheduled: "bg-amber-100 text-amber-700",
+    in_progress: "bg-orange-100 text-orange-700",
+    lead: "bg-slate-100 text-slate-600",
+    estimate_sent: "bg-purple-100 text-purple-700",
+  };
 
   return (
     <div className="flex flex-col h-full space-y-4">
@@ -260,6 +286,53 @@ export default function Schedule() {
         ))}
       </div>
 
+      {/* Main area: calendar + jobs sidebar */}
+      <div className="flex gap-4 flex-1 min-h-0">
+
+      {/* Jobs panel */}
+      <div className="w-52 flex-shrink-0 flex flex-col gap-2">
+        <div className="flex items-center gap-1.5 px-1">
+          <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Jobs</span>
+        </div>
+        <p className="text-[10px] text-muted-foreground px-1 -mt-1">Drag a job onto a day to schedule it</p>
+        <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5">
+          {unscheduledJobs.length === 0 && (
+            <p className="text-xs text-muted-foreground px-1">No eligible jobs.</p>
+          )}
+          {unscheduledJobs.map(job => {
+            const alreadyThisWeek = scheduledJobIds.has(job.id);
+            return (
+              <div
+                key={job.id}
+                draggable
+                onDragStart={() => setDraggingJob(job)}
+                onDragEnd={() => { setDraggingJob(null); setDragOverDay(null); }}
+                className={`rounded-lg border px-2.5 py-2 cursor-grab active:cursor-grabbing text-sm transition-all select-none ${
+                  draggingJob?.id === job.id ? "opacity-40" : "hover:border-primary/50 hover:shadow-sm"
+                } ${alreadyThisWeek ? "border-emerald-200 bg-emerald-50/50" : "bg-card"}`}
+              >
+                <div className="flex items-start gap-1.5">
+                  <GripVertical className="w-3 h-3 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-xs truncate leading-tight">{job.customer_name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">{job.address}</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${JOB_STATUS_COLORS[job.status] || "bg-muted text-muted-foreground"}`}>
+                        {job.status.replace("_", " ")}
+                      </span>
+                      {alreadyThisWeek && (
+                        <span className="text-[10px] text-emerald-600">✓ this week</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Calendar grid */}
       <Card className="flex-1 overflow-auto">
         <div className="flex min-w-[700px]">
@@ -278,11 +351,12 @@ export default function Schedule() {
             const dayEntries = weekSchedules.filter(s => isSameDay(parseISO(s.date), day));
             const colLayout = computeColumns(dayEntries);
             const isDragOver = dragOverDay && isSameDay(dragOverDay, day);
+            const isJobDragOver = isDragOver && !!draggingJob;
 
             return (
               <div
                 key={day.toISOString()}
-                className={`flex-1 border-r border-border last:border-r-0 transition-colors ${isDragOver ? "bg-primary/5" : ""}`}
+                className={`flex-1 border-r border-border last:border-r-0 transition-colors ${isJobDragOver ? "bg-emerald-50 ring-1 ring-emerald-400 ring-inset" : isDragOver ? "bg-primary/5" : ""}`}
                 onDragOver={e => { e.preventDefault(); setDragOverDay(day); }}
                 onDragLeave={() => setDragOverDay(null)}
                 onDrop={() => handleDrop(day)}
@@ -335,6 +409,7 @@ export default function Schedule() {
           })}
         </div>
       </Card>
+      </div>{/* end main area */}
 
       {/* Unscheduled jobs sidebar hint */}
       {jobs.filter(j => j.status === "approved").length > 0 && (
@@ -354,9 +429,10 @@ export default function Schedule() {
 
       <AssignmentModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => { setModalOpen(false); setPendingJob(null); }}
         date={selectedDate}
         existingEntry={editingEntry}
+        initialJob={pendingJob}
         jobs={jobs}
         onSave={handleSave}
       />

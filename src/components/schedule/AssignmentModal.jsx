@@ -19,7 +19,7 @@ const JOB_COLORS = [
   "#06b6d4", "#f97316", "#84cc16", "#ec4899", "#64748b"
 ];
 
-export default function AssignmentModal({ open, onClose, date, existingEntry, jobs, onSave }) {
+export default function AssignmentModal({ open, onClose, date, existingEntry, initialJob, jobs, onSave }) {
   const [selectedJob, setSelectedJob] = useState(null);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [startTime, setStartTime] = useState("08:00");
@@ -45,14 +45,14 @@ export default function AssignmentModal({ open, onClose, date, existingEntry, jo
       setNotes(existingEntry.notes || "");
       setColor(existingEntry.color || JOB_COLORS[0]);
     } else {
-      setSelectedJob(null);
+      setSelectedJob(initialJob || null);
       setSelectedEmployees([]);
       setStartTime("08:00");
       setEndTime("17:00");
       setNotes("");
       setColor(JOB_COLORS[0]);
     }
-  }, [existingEntry, open]);
+  }, [existingEntry, initialJob, open]);
 
   function toggleEmployee(empId) {
     setSelectedEmployees(prev =>
