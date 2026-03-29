@@ -22,6 +22,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { createNotification } from "@/hooks/useNotifications";
 
 const JOB_TYPE_LABELS = {
   new_roof: "New Roof", repair: "Repair", inspection: "Inspection",
@@ -80,10 +81,23 @@ export default function JobDetail() {
 
   const statusMutation = useMutation({
     mutationFn: (newStatus) => base44.entities.Job.update(jobId, { status: newStatus }),
-    onSuccess: () => {
+    onSuccess: async (_, newStatus) => {
       queryClient.invalidateQueries({ queryKey: ["job", jobId] });
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       toast.success("Status updated!");
+      // Notify all users about the status change
+      const statusLabel = STATUSES.find(s => s.value === newStatus)?.label || newStatus;
+      const users = await base44.entities.User.list().catch(() => []);
+      for (const u of users) {
+        createNotification({
+          user_email: u.email,
+          type: "job_status",
+          title: `Job status updated: ${job?.customer_name}`,
+          message: `Status changed to "${statusLabel}" for job at ${job?.address || "unknown address"}`,
+          link: `/jobs/${jobId}`,
+          related_id: jobId,
+        }).catch(() => {});
+      }
     },
   });
 

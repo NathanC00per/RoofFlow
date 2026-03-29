@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Search, LogOut, Settings, User, ChevronDown, Shield, Briefcase, FileText, Receipt, UserCircle } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { cn } from "@/lib/utils";
 
 const SEARCH_SCOPES = [
@@ -182,6 +183,7 @@ export default function TopBar() {
     <header className="h-14 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40 flex items-center px-4 gap-4">
       <GlobalSearch />
       <div className="ml-auto flex items-center gap-2">
+        <NotificationBell />
         <UserMenu />
       </div>
     </header>

@@ -19,7 +19,9 @@ import {
   UserCircle,
   Lock,
   Timer,
-  LayoutTemplate
+  LayoutTemplate,
+  MessageSquareMore,
+  Bell
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -57,6 +59,13 @@ const navGroups = [
     items: [
       { label: "Customers", path: "/customers", icon: UserCircle },
       { label: "Customer Portal", path: "/customer", icon: Lock },
+    ]
+  },
+  {
+    label: "Team",
+    items: [
+      { label: "Forum", path: "/forum", icon: MessageSquareMore },
+      { label: "Notifications", path: "/notifications", icon: Bell },
     ]
   },
   {

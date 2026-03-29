@@ -1,0 +1,51 @@
+{
+  "name": "ForumPost",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Post title (top-level posts only)"
+    },
+    "content": {
+      "type": "string",
+      "description": "Post body"
+    },
+    "author_email": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "parent_id": {
+      "type": "string",
+      "description": "If set, this is a reply to the post with this ID"
+    },
+    "is_pinned": {
+      "type": "boolean",
+      "default": false
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "general",
+        "announcements",
+        "jobs",
+        "safety",
+        "social"
+      ],
+      "default": "general"
+    },
+    "muted_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of user emails who have muted this thread"
+    }
+  },
+  "required": [
+    "content",
+    "author_email",
+    "author_name"
+  ]
+}

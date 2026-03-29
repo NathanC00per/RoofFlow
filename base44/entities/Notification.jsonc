@@ -1,0 +1,49 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "The email of the user this notification is for"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "job_status",
+        "job_assigned",
+        "estimate_approved",
+        "invoice_overdue",
+        "forum_post",
+        "forum_reply",
+        "timesheet_approved",
+        "timesheet_rejected",
+        "system"
+      ],
+      "description": "Notification category"
+    },
+    "title": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "link": {
+      "type": "string",
+      "description": "Optional in-app link"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "related_id": {
+      "type": "string",
+      "description": "ID of the related entity (job, forum post, etc.)"
+    }
+  },
+  "required": [
+    "user_email",
+    "type",
+    "title",
+    "message"
+  ]
+}
