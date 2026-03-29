@@ -14,6 +14,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { JobStatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import JobsMap, { MapLegend } from "@/components/maps/JobsMap";
 import { format, subMonths, isAfter, isBefore, startOfMonth } from "date-fns";
+import { useMaintenanceAutoGenerate } from "@/hooks/useMaintenanceAutoGenerate";
 
 const TIME_RANGES = [
   { label: "Last Month",    value: "1m",  months: 1 },
@@ -108,6 +109,7 @@ function TimesheetRow({ timesheet }) {
 }
 
 export default function Dashboard() {
+  useMaintenanceAutoGenerate();
   const [mapRange, setMapRange] = useState("6m");
   const navigate = useNavigate();
 
