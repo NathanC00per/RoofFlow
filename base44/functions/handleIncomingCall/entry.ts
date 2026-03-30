@@ -13,10 +13,32 @@ Deno.serve(async (req) => {
 
     console.log(`Incoming call from ${fromPhone} to ${toPhone} (SID: ${callSid})`);
 
-    // Return basic voicemail
+    // Get IVR config to play the greeting and menu options
+    const base44 = createClientFromRequest(req);
+    const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.list();
+    const activeIvr = ivrConfigs.find(ivr => ivr.is_active) || ivrConfigs[0];
+
+    if (!activeIvr) {
+      // No IVR configured, go straight to voicemail
+      let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
+      twiml += '<Say>Thank you for calling. Please leave a message after the tone.</Say>';
+      twiml += '<Record maxLength="120" action="/functions/handleVoicemail" />';
+      twiml += '</Response>';
+      return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
+    }
+
+    // Build and return IVR menu with Gather
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
-    twiml += '<Say>Thank you for calling. Please leave a message after the tone.</Say>';
-    twiml += '<Record maxLength="120" />';
+    twiml += `<Say>${escapeXml(activeIvr.greeting_message)}</Say>`;
+    twiml += `<Gather numDigits="1" timeout="${activeIvr.timeout_seconds}" action="/functions/handleIVRKeypress" method="POST">`;
+    
+    for (const option of activeIvr.menu_options) {
+      twiml += `<Say>${escapeXml(option.description_text)}</Say>`;
+    }
+    
+    twiml += '</Gather>';
+    twiml += '<Say>We did not receive any input. Please try again.</Say>';
+    twiml += '<Redirect>/functions/handleIncomingCall</Redirect>';
     twiml += '</Response>';
 
     return new Response(twiml, {
@@ -25,24 +47,14 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('Error handling incoming call:', error);
-    return new Response('Internal error', { status: 500 });
+    // Fallback to voicemail on error
+    let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
+    twiml += '<Say>Thank you for calling. Please leave a message after the tone.</Say>';
+    twiml += '<Record maxLength="120" action="/functions/handleVoicemail" />';
+    twiml += '</Response>';
+    return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
   }
 });
-
-function isWithinBusinessHours(businessHours) {
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
-  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const dayName = dayNames[dayOfWeek];
-  
-  const dayHours = businessHours[dayName];
-  if (!dayHours || !dayHours.enabled) {
-    return false;
-  }
-
-  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  return currentTime >= dayHours.start_time && currentTime <= dayHours.end_time;
-}
 
 function escapeXml(str) {
   if (!str) return '';
