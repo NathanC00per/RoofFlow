@@ -237,7 +237,7 @@ export default function PhoneSettings() {
           <div className="text-sm">
             <p className="font-semibold text-emerald-900">Twilio Connected</p>
             <p className="text-emerald-800 mt-1">
-              Phone: <span className="font-mono">{Deno?.env?.get?.("TWILIO_PHONE_NUMBER") || "(configured)"}</span>
+              Phone: <span className="font-mono">(configured)</span>
             </p>
             <p className="text-xs text-emerald-700 mt-2">
               Incoming calls to your Twilio number will be routed based on the rules below.
