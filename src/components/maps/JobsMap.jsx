@@ -118,7 +118,7 @@ export default function JobsMap({ jobs = [], singleJob = null, height = "400px" 
   const center = geocoded.length > 0 ? [geocoded[0].lat, geocoded[0].lng] : [51.505, -0.09];
 
   return (
-    <div style={{ height }} className="rounded-xl overflow-hidden border">
+    <div style={{ height, isolation: "isolate" }} className="rounded-xl overflow-hidden border relative z-0">
       <MapContainer center={center} zoom={10} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
