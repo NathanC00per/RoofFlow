@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
-import MobileTopBar from "./MobileTopBar";
+import MobileTopBar from "./MobileTopBar.jsx";
 import MobileNav from "./MobileNav";
 
 export default function AppLayout() {
@@ -18,8 +18,8 @@ export default function AppLayout() {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <MobileTopBar />
-        <main className="flex-1 overflow-y-auto pt-16 md:pt-[72px] pb-6 px-3 md:px-6">
-          <div className="max-w-3xl mx-auto">
+        <main className="flex-1 overflow-y-auto pt-16 pb-8 px-4">
+          <div className="max-w-2xl mx-auto">
             <Outlet />
           </div>
         </main>
