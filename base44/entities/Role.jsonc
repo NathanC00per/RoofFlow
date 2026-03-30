@@ -1,0 +1,42 @@
+{
+  "name": "Role",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Role name e.g. Foreman, Estimator"
+    },
+    "description": {
+      "type": "string"
+    },
+    "preset": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "manager",
+        "foreman",
+        "estimator",
+        "laborer",
+        "office",
+        "custom"
+      ],
+      "description": "Preset template this role is based on"
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of permission strings granted to this role"
+    },
+    "is_system": {
+      "type": "boolean",
+      "default": false,
+      "description": "System roles cannot be deleted"
+    }
+  },
+  "required": [
+    "name",
+    "permissions"
+  ]
+}

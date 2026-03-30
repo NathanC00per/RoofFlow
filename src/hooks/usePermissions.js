@@ -1,51 +1,63 @@
 import { useAuth } from "@/lib/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { ROLE_PRESETS } from "@/lib/permissions";
 
 /**
- * Role hierarchy:
- *   admin  → full access
- *   user   → read + limited create/edit, no delete/settings
+ * Resolves permissions for the current user.
+ *
+ * Priority order:
+ *  1. Built-in "admin" base44 role → always gets all permissions
+ *  2. Custom Role record whose name matches user.role → use its permissions array
+ *  3. Preset lookup by role name (foreman, manager, etc.)
+ *  4. Fall back to ROLE_PRESETS.laborer (minimum access)
  */
-const PERMISSIONS = {
-  admin: [
-    "jobs.create", "jobs.edit", "jobs.delete",
-    "estimates.create", "estimates.edit", "estimates.delete",
-    "invoices.create", "invoices.edit", "invoices.delete",
-    "employees.create", "employees.edit", "employees.delete",
-    "customers.create", "customers.edit", "customers.delete",
-    "materials.create", "materials.edit", "materials.delete",
-    "expenses.create", "expenses.edit", "expenses.delete",
-    "timesheets.create", "timesheets.edit", "timesheets.delete", "timesheets.approve",
-    "settings.view", "settings.edit",
-    "finance.view",
-  ],
-  user: [
-    "jobs.create", "jobs.edit",
-    "estimates.create", "estimates.edit",
-    "invoices.create", "invoices.edit",
-    "customers.create", "customers.edit",
-    "materials.create",
-    "expenses.create", "expenses.edit",
-    "timesheets.create", "timesheets.edit",
-    "finance.view",
-  ],
-};
-
 export function usePermissions() {
   const { user } = useAuth();
-  const role = user?.role || "user";
+  const userRole = user?.role || "user";
+  const isSystemAdmin = userRole === "admin";
 
-  function can(permission) {
-    const allowed = PERMISSIONS[role] || PERMISSIONS["user"];
-    return allowed.includes(permission);
-  }
+  // Fetch custom roles so we can match by name
+  const { data: roles = [] } = useQuery({
+    queryKey: ["roles"],
+    queryFn: () => base44.entities.Role.list(),
+    staleTime: 60_000,
+    enabled: !isSystemAdmin, // admins skip this
+  });
 
-  function canAny(...permissions) {
-    return permissions.some(p => can(p));
-  }
+  // Build the permissions Set
+  const permSet = (() => {
+    if (isSystemAdmin) {
+      // Full access — include everything from all presets
+      return new Set(Object.values(ROLE_PRESETS).flatMap(p => p.permissions));
+    }
 
-  function canAll(...permissions) {
-    return permissions.every(p => can(p));
-  }
+    // Try to find a custom Role record whose name matches (case-insensitive)
+    const customRole = roles.find(r => r.name?.toLowerCase() === userRole.toLowerCase());
+    if (customRole?.permissions?.length) {
+      return new Set(customRole.permissions);
+    }
 
-  return { can, canAny, canAll, role, isAdmin: role === "admin" };
+    // Try preset lookup by role name key
+    const preset = ROLE_PRESETS[userRole.toLowerCase()];
+    if (preset) return new Set(preset.permissions);
+
+    // Default: user → foreman-level (view jobs, schedule, timesheets)
+    return new Set(ROLE_PRESETS.laborer?.permissions || [
+      "jobs.view", "schedule.view", "timesheets.view", "timesheets.create",
+    ]);
+  })();
+
+  function can(permission) { return permSet.has(permission); }
+  function canAny(...permissions) { return permissions.some(p => permSet.has(p)); }
+  function canAll(...permissions) { return permissions.every(p => permSet.has(p)); }
+
+  return {
+    can,
+    canAny,
+    canAll,
+    role: userRole,
+    isAdmin: isSystemAdmin,
+    permissions: permSet,
+  };
 }

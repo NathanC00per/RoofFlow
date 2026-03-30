@@ -23,62 +23,73 @@ import {
   MessageSquareMore,
   Bell,
   CalendarDays,
-  Wrench
+  Wrench,
+  Shield,
+  Globe
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 
-const navGroups = [
+// permission key required to show item (null = always show)
+const ALL_NAV_GROUPS = [
   {
     label: "Operations",
     items: [
-      { label: "Dashboard", path: "/", icon: LayoutDashboard },
-      { label: "Job Board", path: "/job-dashboard", icon: Kanban },
-      { label: "New Job", path: "/jobs/new", icon: PlusCircle },
-      { label: "All Jobs", path: "/jobs", icon: Briefcase },
-      { label: "Maintenance", path: "/maintenance", icon: Wrench },
+      { label: "Dashboard",   path: "/",             icon: LayoutDashboard, perm: null },
+      { label: "Job Board",   path: "/job-dashboard", icon: Kanban,          perm: "jobs.view" },
+      { label: "New Job",     path: "/jobs/new",      icon: PlusCircle,      perm: "jobs.create" },
+      { label: "All Jobs",    path: "/jobs",           icon: Briefcase,       perm: "jobs.view" },
+      { label: "Maintenance", path: "/maintenance",    icon: Wrench,          perm: "maintenance.view" },
     ]
   },
   {
     label: "Workforce",
     items: [
-      { label: "Employees", path: "/employees", icon: Users },
-      { label: "Timesheets", path: "/timesheets", icon: Clock },
-      { label: "My Clock-In", path: "/clock-in", icon: Timer },
-      { label: "Schedule", path: "/schedule", icon: CalendarDays },
+      { label: "Employees",   path: "/employees",  icon: Users,       perm: "employees.view" },
+      { label: "Timesheets",  path: "/timesheets", icon: Clock,       perm: "timesheets.view" },
+      { label: "My Clock-In", path: "/clock-in",   icon: Timer,       perm: null },
+      { label: "Schedule",    path: "/schedule",   icon: CalendarDays, perm: "schedule.view" },
     ]
   },
   {
     label: "Finance",
     items: [
-      { label: "Finance Dashboard", path: "/finance", icon: BarChart2 },
-      { label: "Estimates", path: "/estimates", icon: FileText },
-      { label: "Invoices", path: "/invoices", icon: Receipt },
-      { label: "Expenses", path: "/expenses", icon: Wallet },
-      { label: "Materials", path: "/materials", icon: Package },
+      { label: "Finance Dashboard", path: "/finance",    icon: BarChart2, perm: "finance.view" },
+      { label: "Estimates",         path: "/estimates",  icon: FileText,  perm: "estimates.view" },
+      { label: "Invoices",          path: "/invoices",   icon: Receipt,   perm: "invoices.view" },
+      { label: "Expenses",          path: "/expenses",   icon: Wallet,    perm: "expenses.view" },
+      { label: "Materials",         path: "/materials",  icon: Package,   perm: "materials.view" },
     ]
   },
   {
     label: "Clients",
     items: [
-      { label: "Customers", path: "/customers", icon: UserCircle },
-      { label: "Customer Portal", path: "/customer", icon: Lock },
+      { label: "Customers",       path: "/customers", icon: UserCircle, perm: "customers.view" },
+      { label: "Customer Portal", path: "/customer",  icon: Lock,       perm: "customers.view" },
     ]
   },
   {
     label: "Team",
     items: [
-      { label: "Forum", path: "/forum", icon: MessageSquareMore },
-      { label: "Notifications", path: "/notifications", icon: Bell },
+      { label: "Forum",         path: "/forum",          icon: MessageSquareMore, perm: "forum.view" },
+      { label: "Notifications", path: "/notifications",  icon: Bell,             perm: null },
     ]
   },
   {
     label: "Settings",
     items: [
-      { label: "Company Settings", path: "/settings/company", icon: Building2 },
-      { label: "Doc Templates", path: "/settings/templates", icon: Settings },
-      { label: "Job Templates", path: "/settings/templates/jobs", icon: LayoutTemplate },
-      { label: "VAT Tracker", path: "/settings/vat", icon: Receipt },
+      { label: "Company Settings", path: "/settings/company",       icon: Building2,     perm: "settings.view" },
+      { label: "Doc Templates",    path: "/settings/templates",     icon: Settings,      perm: "settings.view" },
+      { label: "Job Templates",    path: "/settings/templates/jobs", icon: LayoutTemplate, perm: "settings.view" },
+      { label: "VAT Tracker",      path: "/settings/vat",           icon: Receipt,       perm: "settings.view" },
+      { label: "Roles & Permissions", path: "/settings/roles",      icon: Shield,        perm: "roles.view" },
+    ]
+  },
+  {
+    label: "Website",
+    items: [
+      { label: "Public Site", path: "/website", icon: Globe, perm: null },
     ]
   }
 ];
@@ -86,6 +97,12 @@ const navGroups = [
 export default function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { can } = usePermissions();
+
+  const navGroups = ALL_NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => !item.perm || can(item.perm)),
+  })).filter(group => group.items.length > 0);
 
   return (
     <aside className={cn(

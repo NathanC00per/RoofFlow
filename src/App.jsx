@@ -39,7 +39,15 @@ import Notifications from './pages/Notifications';
 import MaintenanceContracts from './pages/maintenance/MaintenanceContracts';
 import MaintenanceContractForm from './pages/maintenance/MaintenanceContractForm';
 import MaintenanceContractDetail from './pages/maintenance/MaintenanceContractDetail';
-// v2026.03.27
+import RolesPermissions from './pages/settings/RolesPermissions';
+import ClientPortal from './pages/ClientPortal';
+import WebsiteLayout from './pages/website/WebsiteLayout';
+import WebsiteHome from './pages/website/WebsiteHome';
+import WebsiteServices from './pages/website/WebsiteServices';
+import WebsiteGallery from './pages/website/WebsiteGallery';
+import WebsiteTestimonials from './pages/website/WebsiteTestimonials';
+import WebsiteContact from './pages/website/WebsiteContact';
+// v2026.03.30
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -97,8 +105,18 @@ const AuthenticatedApp = () => {
         <Route path="/maintenance/new" element={<MaintenanceContractForm />} />
         <Route path="/maintenance/:id/edit" element={<MaintenanceContractForm />} />
         <Route path="/maintenance/:id" element={<MaintenanceContractDetail />} />
+        <Route path="/settings/roles" element={<RolesPermissions />} />
+        <Route path="/client-portal" element={<ClientPortal />} />
       </Route>
       <Route path="/customer" element={<CustomerPortal />} />
+      {/* Public website */}
+      <Route element={<WebsiteLayout />}>
+        <Route path="/website" element={<WebsiteHome />} />
+        <Route path="/website/services" element={<WebsiteServices />} />
+        <Route path="/website/gallery" element={<WebsiteGallery />} />
+        <Route path="/website/testimonials" element={<WebsiteTestimonials />} />
+        <Route path="/website/contact" element={<WebsiteContact />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
