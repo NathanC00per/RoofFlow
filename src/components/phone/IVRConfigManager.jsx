@@ -63,8 +63,8 @@ export default function IVRConfigManager() {
       name: "",
       greeting_message: "Welcome to our company. ",
       menu_options: [
-        { digit: "1", label: "Sales", description_text: "Press 1 for Sales" },
-        { digit: "2", label: "Support", description_text: "Press 2 for Support" },
+        { digit: "1", label: "Sales", description_text: "Press 1 for Sales", route_id: "", route_description: "" },
+        { digit: "2", label: "Support", description_text: "Press 2 for Support", route_id: "", route_description: "" },
       ],
       timeout_seconds: 5,
       max_attempts: 3,
@@ -105,6 +105,8 @@ export default function IVRConfigManager() {
       digit: "3",
       label: "New Option",
       description_text: "Press 3 for New Option",
+      route_id: "",
+      route_description: "",
     };
     setForm({
       ...form,
