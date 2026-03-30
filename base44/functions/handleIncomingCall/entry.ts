@@ -14,7 +14,15 @@ Deno.serve(async (req) => {
     const toPhone = formData.get('To');
     const callSid = formData.get('CallSid');
 
-    // Log the incoming call
+    // Log the incoming call to CommunicationLog
+    await base44.asServiceRole.entities.CommunicationLog.create({
+      type: 'call',
+      direction: 'incoming',
+      phone_number: fromPhone,
+      timestamp: new Date().toISOString(),
+      status: 'completed',
+    });
+
     console.log(`Incoming call from ${fromPhone} to ${toPhone} (SID: ${callSid})`);
 
     // Check if an IVR is active
