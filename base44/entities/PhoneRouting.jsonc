@@ -1,0 +1,59 @@
+{
+  "name": "PhoneRouting",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "description": "Route description (e.g., 'Customer Inquiries')"
+    },
+    "routing_type": {
+      "type": "string",
+      "enum": [
+        "role",
+        "employee",
+        "round_robin"
+      ],
+      "description": "How to route: to specific role, specific employee, or round-robin"
+    },
+    "target_role": {
+      "type": "string",
+      "description": "Role to route to (when routing_type='role')"
+    },
+    "target_employee_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Employee IDs to route to (when routing_type='employee')"
+    },
+    "target_employee_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Denormalized employee names"
+    },
+    "forward_number": {
+      "type": "string",
+      "description": "Optional phone number to forward to (if no agent available)"
+    },
+    "ring_timeout": {
+      "type": "number",
+      "default": 30,
+      "description": "Seconds before forwarding if no answer"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "priority": {
+      "type": "number",
+      "default": 0,
+      "description": "Higher priority routes are tried first"
+    }
+  },
+  "required": [
+    "description",
+    "routing_type"
+  ]
+}

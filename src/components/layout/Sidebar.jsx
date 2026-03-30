@@ -86,8 +86,9 @@ const ALL_NAV_GROUPS = [
       { label: "Job Templates",    path: "/settings/templates/jobs", icon: LayoutTemplate, perm: "settings.view" },
       { label: "VAT Tracker",      path: "/settings/vat",           icon: Receipt,       perm: "settings.view" },
       { label: "Roles & Permissions", path: "/settings/roles",      icon: Shield,        perm: "roles.view" },
-    ]
-  },
+      { label: "Company Phone",      path: "/settings/phone",      icon: Phone,         adminOnly: true },
+      ]
+      },
   {
     label: "Website",
     items: [
