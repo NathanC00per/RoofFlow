@@ -100,40 +100,42 @@ export default function MobileNav() {
               ? moreOpen
               : (location.pathname === tab.path || (tab.path !== "/" && location.pathname.startsWith(tab.path)));
 
+            if (isMore) {
+              return (
+                <button
+                  key="more"
+                  onClick={() => setMoreOpen(o => !o)}
+                  className={cn(
+                    "flex-1 flex flex-col items-center justify-center gap-1 transition-colors",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-all", isActive ? "bg-primary text-white" : "")}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-medium">{tab.label}</span>
+                </button>
+              );
+            }
+
             return (
-              <button
+              <Link
                 key={tab.path}
-                onClick={() => {
-                  if (isMore) { setMoreOpen(o => !o); }
-                  else { setMoreOpen(false); }
-                }}
+                to={tab.path}
+                onClick={() => setMoreOpen(false)}
                 className={cn(
                   "flex-1 flex flex-col items-center justify-center gap-1 transition-colors",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
-                {...(!isMore ? { as: Link, to: tab.path } : {})}
               >
-                {isMore ? (
-                  <>
-                    <Icon className="w-5 h-5" />
-                    <span className="text-[10px] font-medium">{tab.label}</span>
-                  </>
-                ) : (
-                  <Link
-                    to={tab.path}
-                    className="flex flex-col items-center gap-1 w-full h-full justify-center"
-                    onClick={() => setMoreOpen(false)}
-                  >
-                    <div className={cn(
-                      "w-8 h-8 rounded-xl flex items-center justify-center transition-all",
-                      isActive ? "bg-primary text-white scale-110" : ""
-                    )}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-medium">{tab.label}</span>
-                  </Link>
-                )}
-              </button>
+                <div className={cn(
+                  "w-8 h-8 rounded-xl flex items-center justify-center transition-all",
+                  isActive ? "bg-primary text-white scale-110" : ""
+                )}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-medium">{tab.label}</span>
+              </Link>
             );
           })}
         </div>
