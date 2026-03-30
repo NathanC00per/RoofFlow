@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     if (sortedRoutes.length === 0) {
       // No routing configured - default voicemail
       twiml += '<Say>Thank you for calling. No one is available right now. Please leave a message.</Say>';
-      twiml += '<Record maxLength="120" />';
+      twiml += '<Record maxLength="120" action="?voicemail=true" method="POST" />';
     } else {
       const firstRoute = sortedRoutes[0];
       
@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
 
       // Default voicemail fallback
       twiml += '<Say>Thank you for calling. No one answered. Please leave a message.</Say>';
-      twiml += '<Record maxLength="120" />';
+      twiml += `<Record maxLength="120" action="?voicemail=true&routeId=${firstRoute.id}" method="POST" />`;
     }
 
     twiml += '</Response>';
