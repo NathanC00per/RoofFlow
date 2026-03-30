@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
 
     console.log(`Incoming call from ${fromPhone} to ${toPhone} (SID: ${callSid})`);
 
-    // Temporary: Return basic voicemail until auth is fixed
+    // Return basic voicemail
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     twiml += '<Say>Thank you for calling. Please leave a message after the tone.</Say>';
     twiml += '<Record maxLength="120" />';
@@ -28,6 +28,21 @@ Deno.serve(async (req) => {
     return new Response('Internal error', { status: 500 });
   }
 });
+
+function isWithinBusinessHours(businessHours) {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const dayName = dayNames[dayOfWeek];
+  
+  const dayHours = businessHours[dayName];
+  if (!dayHours || !dayHours.enabled) {
+    return false;
+  }
+
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  return currentTime >= dayHours.start_time && currentTime <= dayHours.end_time;
+}
 
 function escapeXml(str) {
   if (!str) return '';

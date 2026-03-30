@@ -13,10 +13,27 @@ Deno.serve(async (req) => {
 
     console.log(`IVR keypress: ${digit}`);
 
-    // Temporary: Return voicemail until auth is fixed
+    // Check if we're within business hours
+    const isOpen = isWithinBusinessHours({
+      monday: { enabled: true, start_time: '09:00', end_time: '17:00' },
+      tuesday: { enabled: true, start_time: '09:00', end_time: '17:00' },
+      wednesday: { enabled: true, start_time: '09:00', end_time: '17:00' },
+      thursday: { enabled: true, start_time: '09:00', end_time: '17:00' },
+      friday: { enabled: true, start_time: '09:00', end_time: '17:00' },
+      saturday: { enabled: false, start_time: '09:00', end_time: '17:00' },
+      sunday: { enabled: false, start_time: '09:00', end_time: '17:00' },
+    });
+
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
-    twiml += '<Say>Thank you. Please leave a message.</Say>';
-    twiml += '<Record maxLength="120" />';
+    
+    if (!isOpen) {
+      twiml += '<Say>We are currently closed. Please leave a message and we will get back to you.</Say>';
+      twiml += '<Record maxLength="120" />';
+    } else {
+      twiml += '<Say>Thank you. Please leave a message.</Say>';
+      twiml += '<Record maxLength="120" />';
+    }
+    
     twiml += '</Response>';
 
     return new Response(twiml, {
@@ -28,3 +45,18 @@ Deno.serve(async (req) => {
     return new Response('Internal error', { status: 500 });
   }
 });
+
+function isWithinBusinessHours(businessHours) {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const dayName = dayNames[dayOfWeek];
+  
+  const dayHours = businessHours[dayName];
+  if (!dayHours || !dayHours.enabled) {
+    return false;
+  }
+
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  return currentTime >= dayHours.start_time && currentTime <= dayHours.end_time;
+}
