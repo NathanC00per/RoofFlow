@@ -30,12 +30,13 @@ Deno.serve(async (req) => {
     // Build and return IVR menu with Gather
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     twiml += `<Say>${escapeXml(activeIvr.greeting_message)}</Say>`;
-    twiml += `<Gather numDigits="1" timeout="${activeIvr.timeout_seconds}" action="https://app.base44.dev/functions/handleIVRKeypress" method="POST">`;
     
     for (const option of activeIvr.menu_options) {
       twiml += `<Say>${escapeXml(option.description_text)}</Say>`;
     }
     
+    twiml += `<Gather numDigits="1" timeout="${activeIvr.timeout_seconds}" action="https://app.base44.dev/functions/handleIVRKeypress" method="POST">`;
+    twiml += '<Say>Please press a key now.</Say>';
     twiml += '</Gather>';
     twiml += '<Say>We did not receive any input. Please try again.</Say>';
     twiml += '<Redirect>https://app.base44.dev/functions/handleIncomingCall</Redirect>';
