@@ -16,7 +16,17 @@ Deno.serve(async (req) => {
 
   const results = { sms: { sent: 0, failed: 0 }, email: { sent: 0, failed: 0 } };
 
+  function interpolate(template, recipient) {
+    return template
+      .replace(/\{name\}/gi, recipient.name || '')
+      .replace(/\{phone\}/gi, recipient.phone || '')
+      .replace(/\{email\}/gi, recipient.email || '');
+  }
+
   for (const recipient of recipients) {
+    const personalizedMessage = interpolate(message, recipient);
+    const personalizedSubject = interpolate(subject || 'Message from RoofPro', recipient);
+
     // SMS
     if (channels.sms && recipient.phone) {
       const resp = await fetch(
@@ -27,7 +37,7 @@ Deno.serve(async (req) => {
             Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: new URLSearchParams({ To: recipient.phone, From: fromNumber, Body: message }),
+          body: new URLSearchParams({ To: recipient.phone, From: fromNumber, Body: personalizedMessage }),
         }
       );
       resp.ok ? results.sms.sent++ : results.sms.failed++;
@@ -37,8 +47,8 @@ Deno.serve(async (req) => {
     if (channels.email && recipient.email) {
       const emailResp = await base44.asServiceRole.integrations.Core.SendEmail({
         to: recipient.email,
-        subject: subject || 'Message from RoofPro',
-        body: message,
+        subject: personalizedSubject,
+        body: personalizedMessage,
       }).catch(() => null);
       emailResp ? results.email.sent++ : results.email.failed++;
     }
