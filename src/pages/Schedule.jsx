@@ -375,10 +375,10 @@ export default function Schedule() {
 
   // ── Week view (desktop) ──────────────────────────────────────────────────
   const WeekView = () => (
-    <div className="flex gap-4 flex-1 min-h-0">
+    <div className="flex gap-4" style={{ height: "calc(100vh - 280px)", minHeight: "500px" }}>
       {/* Jobs sidebar */}
       {canEdit && (
-        <div className="w-52 flex-shrink-0 flex flex-col gap-2">
+        <div className="w-52 flex-shrink-0 flex flex-col gap-2 overflow-hidden">
           <div className="flex items-center gap-1.5 px-1">
             <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Jobs</span>
@@ -421,8 +421,8 @@ export default function Schedule() {
       )}
 
       {/* Calendar grid */}
-      <Card className="flex-1 overflow-auto">
-        <div className="flex min-w-[600px]">
+      <Card className="flex-1 overflow-auto min-w-0">
+        <div className="flex min-w-[700px]">
           {/* Time column */}
           <div className="w-14 flex-shrink-0 border-r border-border">
             <div className="h-12 border-b border-border" />
@@ -501,7 +501,7 @@ export default function Schedule() {
   );
 
   return (
-    <div className="flex flex-col h-full space-y-4">
+    <div className="flex flex-col space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

@@ -33,7 +33,7 @@ import VatTracker from './pages/settings/VatTracker';
 import JobTemplates from './pages/settings/JobTemplates';
 import EmployeeClockIn from './pages/employee/EmployeeClockIn';
 import ErrorBoundary from './components/ErrorBoundary';
-import Schedule from './pages/Schedule.jsx';
+import Schedule from './pages/Schedule';
 import Forum from './pages/Forum';
 import Notifications from './pages/Notifications';
 import MaintenanceContracts from './pages/maintenance/MaintenanceContracts';
