@@ -18,13 +18,11 @@ export default function AppLayout() {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <MobileTopBar />
-        {/* pt accounts for top bar (16=64px on mobile, 18=72px on tablet), pb for bottom nav */}
-        <main className="flex-1 overflow-y-auto pt-16 md:pt-[72px] pb-24 md:pb-28 px-3 md:px-6">
+        <main className="flex-1 overflow-y-auto pt-16 md:pt-[72px] pb-6 px-3 md:px-6">
           <div className="max-w-3xl mx-auto">
             <Outlet />
           </div>
         </main>
-        <MobileNav />
       </div>
     );
   }
