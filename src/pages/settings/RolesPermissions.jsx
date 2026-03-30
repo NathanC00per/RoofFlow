@@ -184,12 +184,17 @@ export default function RolesPermissions() {
   });
 
   function handleCreate() {
-    if (!newName.trim()) return;
+    if (!newName.trim()) {
+      toast.error("Please enter a role name first");
+      return;
+    }
     createMutation.mutate({ name: newName.trim(), permissions: [], preset: "custom" });
   }
 
-  const canView = isAdmin || can("roles.view");
-  const canEdit = isAdmin || can("roles.edit");
+  // If no roles exist yet (bootstrap), allow full access so the first roles can be created.
+  const noRolesYet = !isLoading && roles.length === 0;
+  const canView = isAdmin || noRolesYet || can("roles.view");
+  const canEdit = isAdmin || noRolesYet || can("roles.edit");
 
   if (!canView) {
     return <div className="p-8 text-center text-muted-foreground">You don't have permission to view roles.</div>;
@@ -207,15 +212,16 @@ export default function RolesPermissions() {
               value={newName}
               onChange={e => setNewName(e.target.value)}
               placeholder="New role name..."
-              className="w-44"
+              className="w-48"
               onKeyDown={e => e.key === "Enter" && handleCreate()}
+              autoFocus={false}
             />
             <Button
               onClick={handleCreate}
-              disabled={!newName.trim() || createMutation.isPending}
+              disabled={createMutation.isPending}
               className="gap-2"
             >
-              <Plus className="w-4 h-4" />Create Role
+              <Plus className="w-4 h-4" />{createMutation.isPending ? "Creating..." : "Create Role"}
             </Button>
           </div>
         )}

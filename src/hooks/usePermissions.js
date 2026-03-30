@@ -22,7 +22,7 @@ export function usePermissions() {
     queryKey: ["roles"],
     queryFn: () => base44.entities.Role.list(),
     staleTime: 60_000,
-    enabled: !isSystemAdmin, // admins skip this
+    enabled: !isSystemAdmin,
   });
 
   // Build the permissions Set
@@ -57,7 +57,7 @@ export function usePermissions() {
     canAny,
     canAll,
     role: userRole,
-    isAdmin: isSystemAdmin,
+    isAdmin: isSystemAdmin, // true when base44 role = "admin"
     permissions: permSet,
   };
 }
