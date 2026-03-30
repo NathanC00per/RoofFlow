@@ -104,31 +104,39 @@ export default function Sidebar() {
     items: group.items.filter(item => !item.perm || can(item.perm)),
   })).filter(group => group.items.length > 0);
 
+  const co = (() => { try { const s = localStorage.getItem("company_settings"); return s ? JSON.parse(s) : {}; } catch { return {}; } })();
+  const companyName = co.companyName || "RoofPro";
+  const logoUrl = co.logoUrl || "";
+
   return (
     <aside className={cn(
-      "h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 sticky top-0",
-      collapsed ? "w-[72px]" : "w-64"
+      "h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 sticky top-0 select-none",
+      collapsed ? "w-[72px]" : "w-72"
     )}>
       {/* Logo */}
-      <div className="p-5 flex items-center gap-3 border-b border-sidebar-border">
-        <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0">
-          <HardHat className="w-5 h-5 text-sidebar-primary-foreground" />
+      <div className="p-4 flex items-center gap-3 border-b border-sidebar-border min-h-[64px]">
+        <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0 overflow-hidden">
+          {logoUrl
+            ? <img src={logoUrl} alt="" className="w-full h-full object-contain p-0.5" />
+            : <HardHat className="w-5 h-5 text-sidebar-primary-foreground" />
+          }
         </div>
         {!collapsed && (
           <div className="overflow-hidden">
-            <h1 className="font-bold text-base text-white tracking-tight truncate">RoofPro</h1>
-            <p className="text-[11px] text-sidebar-foreground/60 truncate">Management</p>
+            <h1 className="font-bold text-base text-white tracking-tight truncate">{companyName}</h1>
+            <p className="text-[11px] text-sidebar-foreground/50 truncate">Management System</p>
           </div>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-5 overflow-y-auto scrollbar-thin">
         {navGroups.map((group) => (
           <div key={group.label}>
             {!collapsed && (
-              <p className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold px-3 mb-1">{group.label}</p>
+              <p className="text-[10px] uppercase tracking-widest text-sidebar-foreground/35 font-bold px-3 mb-1.5">{group.label}</p>
             )}
+            {collapsed && <div className="h-px bg-sidebar-border mx-2 mb-2" />}
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const isActive = location.pathname === item.path ||
@@ -137,15 +145,24 @@ export default function Sidebar() {
                   <Link
                     key={item.path}
                     to={item.path}
+                    title={collapsed ? item.label : undefined}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                      "flex items-center gap-3 rounded-lg text-sm font-medium transition-all group",
+                      collapsed ? "px-2.5 py-2.5 justify-center" : "px-3 py-2",
                       isActive
-                        ? "bg-sidebar-accent text-white"
-                        : "text-sidebar-foreground/70 hover:text-white hover:bg-sidebar-accent/50"
+                        ? "bg-sidebar-accent text-white shadow-sm"
+                        : "text-sidebar-foreground/65 hover:text-white hover:bg-sidebar-accent/50"
                     )}
                   >
-                    <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "text-sidebar-primary")} />
+                    <item.icon className={cn(
+                      "flex-shrink-0 transition-colors",
+                      collapsed ? "w-5 h-5" : "w-4 h-4",
+                      isActive ? "text-sidebar-primary" : "group-hover:text-sidebar-primary"
+                    )} />
                     {!collapsed && <span className="truncate">{item.label}</span>}
+                    {!collapsed && isActive && (
+                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary flex-shrink-0" />
+                    )}
                   </Link>
                 );
               })}

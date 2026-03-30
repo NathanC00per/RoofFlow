@@ -1,0 +1,133 @@
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getCompanySettings } from "@/pages/settings/CompanySettings";
+import { Search, X, Briefcase, FileText, Receipt, UserCircle, Bell } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
+
+const SEARCH_SCOPES = [
+  { key: "jobs",      label: "Job",      icon: Briefcase,  path: r => `/jobs/${r.id}`,       display: r => `${r.customer_name} — ${r.address || ""}` },
+  { key: "customers", label: "Customer", icon: UserCircle, path: r => `/customers/${r.id}`,  display: r => `${r.first_name} ${r.last_name}` },
+  { key: "invoices",  label: "Invoice",  icon: Receipt,    path: r => `/invoices/${r.id}`,   display: r => `${r.invoice_number || "INV"} — ${r.status}` },
+];
+
+export default function MobileTopBar() {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const co = getCompanySettings();
+  const primary = co.primaryColor || "#1e3a5f";
+  const accent  = co.accentColor  || "#e8730a";
+
+  const { data: jobs = [] }      = useQuery({ queryKey: ["jobs"],      queryFn: () => base44.entities.Job.list(),      enabled: searchOpen });
+  const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: () => base44.entities.Customer.list(), enabled: searchOpen });
+  const { data: invoices = [] }  = useQuery({ queryKey: ["invoices"],  queryFn: () => base44.entities.Invoice.list(),  enabled: searchOpen });
+  const data = { jobs, customers, invoices };
+
+  const results = [];
+  if (query.trim().length >= 2) {
+    const q = query.toLowerCase();
+    for (const scope of SEARCH_SCOPES) {
+      (data[scope.key] || [])
+        .filter(r => scope.display(r).toLowerCase().includes(q))
+        .slice(0, 3)
+        .forEach(r => results.push({ scope, record: r }));
+    }
+  }
+
+  const initials = user?.full_name
+    ? user.full_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+    : (user?.email?.[0] || "U").toUpperCase();
+
+  if (searchOpen) {
+    return (
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b shadow-sm"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="flex items-center gap-2 h-14 px-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              autoFocus
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search jobs, customers, invoices…"
+              className="w-full h-10 pl-9 pr-4 rounded-xl border border-input bg-muted text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <button
+            onClick={() => { setSearchOpen(false); setQuery(""); }}
+            className="p-2 rounded-xl text-muted-foreground hover:bg-muted"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {query.trim().length >= 2 && (
+          <div className="border-t bg-background max-h-80 overflow-y-auto">
+            {results.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-6">No results</p>
+            ) : (
+              <div className="p-2 space-y-0.5">
+                {results.map((item, i) => {
+                  const Icon = item.scope.icon;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => { navigate(item.scope.path(item.record)); setSearchOpen(false); setQuery(""); }}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted text-left"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{item.scope.display(item.record)}</p>
+                        <p className="text-xs text-muted-foreground">{item.scope.label}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </header>
+    );
+  }
+
+  return (
+    <header
+      className="fixed top-0 left-0 right-0 z-40 border-b bg-background/95 backdrop-blur-md"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
+      <div className="flex items-center justify-between h-14 px-4">
+        {/* Brand */}
+        <div className="flex items-center gap-2">
+          {co.logoUrl
+            ? <img src={co.logoUrl} alt="" className="h-8 w-8 rounded-lg object-contain" style={{ background: `${primary}20` }} />
+            : <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ background: primary }}>{(co.companyName || "R")[0]}</div>
+          }
+          <span className="font-bold text-sm tracking-tight truncate max-w-[140px]">{co.companyName || "RoofPro"}</span>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+          <NotificationBell />
+          <Link to="/settings/company" className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
+            {initials}
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}

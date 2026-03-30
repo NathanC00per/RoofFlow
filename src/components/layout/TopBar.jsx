@@ -61,6 +61,7 @@ function GlobalSearch() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         <input
+          id="global-search"
           type="text"
           value={query}
           onChange={e => { setQuery(e.target.value); setOpen(true); }}
@@ -178,11 +179,37 @@ function UserMenu() {
   );
 }
 
+function QuickActions() {
+  const navigate = useNavigate();
+  const { can } = usePermissions();
+
+  useEffect(() => {
+    function handler(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); document.getElementById("global-search")?.focus(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === "j") { e.preventDefault(); if (can("jobs.create")) navigate("/jobs/new"); }
+    }
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [can]);
+
+  return null;
+}
+
 export default function TopBar() {
   return (
-    <header className="h-14 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40 flex items-center px-4 gap-4">
-      <GlobalSearch />
-      <div className="ml-auto flex items-center gap-2">
+    <header className="h-14 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40 flex items-center px-6 gap-4">
+      <QuickActions />
+      <div className="flex-1 max-w-xl">
+        <GlobalSearch />
+      </div>
+      <div className="ml-auto flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-2.5 py-1.5 rounded-lg border">
+          <kbd className="font-mono">⌘K</kbd>
+          <span>search</span>
+          <span className="mx-1 text-muted-foreground/40">·</span>
+          <kbd className="font-mono">⌘J</kbd>
+          <span>new job</span>
+        </div>
         <NotificationBell />
         <UserMenu />
       </div>
