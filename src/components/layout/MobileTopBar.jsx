@@ -78,30 +78,30 @@ export default function MobileTopBar() {
     return (
       <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b shadow-sm"
         style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="flex items-center gap-2 h-14 px-3">
+        <div className="flex items-center gap-2 h-16 md:h-[72px] px-3 md:px-5">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               autoFocus
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search jobs, customers, invoices…"
-              className="w-full h-10 pl-9 pr-4 rounded-xl border border-input bg-muted text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full h-12 md:h-14 pl-10 pr-4 rounded-xl border border-input bg-muted text-base md:text-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <button
             onClick={() => { setSearchOpen(false); setQuery(""); }}
-            className="p-2 rounded-xl text-muted-foreground hover:bg-muted"
+            className="p-3 rounded-xl text-muted-foreground hover:bg-muted"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
         {query.trim().length >= 2 && (
-          <div className="border-t bg-background max-h-80 overflow-y-auto">
+          <div className="border-t bg-background max-h-96 overflow-y-auto">
             {results.length === 0 ? (
-              <p className="text-center text-sm text-muted-foreground py-6">No results</p>
+              <p className="text-center text-base text-muted-foreground py-8">No results</p>
             ) : (
               <div className="p-2 space-y-0.5">
                 {results.map((item, i) => {
@@ -110,14 +110,14 @@ export default function MobileTopBar() {
                     <button
                       key={i}
                       onClick={() => { navigate(item.scope.path(item.record)); setSearchOpen(false); setQuery(""); }}
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted text-left"
+                      className="w-full flex items-center gap-3 px-4 py-4 rounded-xl hover:bg-muted text-left"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 text-primary" />
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-5 h-5 text-primary" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{item.scope.display(item.record)}</p>
-                        <p className="text-xs text-muted-foreground">{item.scope.label}</p>
+                        <p className="text-base font-medium truncate">{item.scope.display(item.record)}</p>
+                        <p className="text-sm text-muted-foreground">{item.scope.label}</p>
                       </div>
                     </button>
                   );
@@ -139,18 +139,18 @@ export default function MobileTopBar() {
 
       {/* Nav drawer */}
       {navOpen && (
-        <div className="fixed top-0 left-0 bottom-0 z-50 w-72 bg-background border-r shadow-2xl overflow-y-auto flex flex-col">
-          <div className="flex items-center gap-3 px-4 h-14 border-b flex-shrink-0">
+        <div className="fixed top-0 left-0 bottom-0 z-50 w-80 md:w-96 bg-background border-r shadow-2xl overflow-y-auto flex flex-col">
+          <div className="flex items-center gap-3 px-5 h-16 md:h-[72px] border-b flex-shrink-0">
             {co.logoUrl
-              ? <img src={co.logoUrl} alt="" className="h-8 w-8 rounded-lg object-contain" style={{ background: `${primary}20` }} />
-              : <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ background: primary }}>{(co.companyName || "R")[0]}</div>
+              ? <img src={co.logoUrl} alt="" className="h-10 w-10 rounded-lg object-contain" style={{ background: `${primary}20` }} />
+              : <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-base font-bold" style={{ background: primary }}>{(co.companyName || "R")[0]}</div>
             }
-            <span className="font-bold text-sm tracking-tight">{co.companyName || "RoofPro"}</span>
-            <button onClick={() => setNavOpen(false)} className="ml-auto p-1.5 rounded-lg text-muted-foreground hover:bg-muted">
-              <X className="w-4 h-4" />
+            <span className="font-bold text-base tracking-tight">{co.companyName || "RoofPro"}</span>
+            <button onClick={() => setNavOpen(false)} className="ml-auto p-2 rounded-lg text-muted-foreground hover:bg-muted">
+              <X className="w-5 h-5" />
             </button>
           </div>
-          <nav className="flex-1 p-3 space-y-0.5">
+          <nav className="flex-1 p-4 space-y-1">
             {visibleNav.map(item => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
@@ -160,11 +160,11 @@ export default function MobileTopBar() {
                   to={item.path}
                   onClick={() => setNavOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                    "flex items-center gap-4 px-4 py-3.5 rounded-xl text-base font-medium transition-colors",
                     isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <Icon className="w-5 h-5 flex-shrink-0" />
                   {item.label}
                 </Link>
               );
@@ -177,32 +177,32 @@ export default function MobileTopBar() {
       className="fixed top-0 left-0 right-0 z-40 border-b bg-background/95 backdrop-blur-md"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <div className="flex items-center justify-between h-14 px-4">
+      <div className="flex items-center justify-between h-16 md:h-[72px] px-4 md:px-6">
         {/* Hamburger + Brand */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setNavOpen(true)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+            className="w-11 h-11 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-6 h-6" />
           </button>
           {co.logoUrl
-            ? <img src={co.logoUrl} alt="" className="h-8 w-8 rounded-lg object-contain" style={{ background: `${primary}20` }} />
-            : <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ background: primary }}>{(co.companyName || "R")[0]}</div>
+            ? <img src={co.logoUrl} alt="" className="h-9 w-9 md:h-10 md:w-10 rounded-lg object-contain" style={{ background: `${primary}20` }} />
+            : <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center text-white text-base font-bold" style={{ background: primary }}>{(co.companyName || "R")[0]}</div>
           }
-          <span className="font-bold text-sm tracking-tight truncate max-w-[140px]">{co.companyName || "RoofPro"}</span>
+          <span className="font-bold text-base md:text-lg tracking-tight truncate max-w-[160px] md:max-w-[260px]">{co.companyName || "RoofPro"}</span>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setSearchOpen(true)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+            className="w-11 h-11 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
           >
-            <Search className="w-5 h-5" />
+            <Search className="w-6 h-6" />
           </button>
           <NotificationBell />
-          <Link to="/settings/company" className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
+          <Link to="/settings/company" className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center text-primary-foreground text-base font-bold">
             {initials}
           </Link>
         </div>

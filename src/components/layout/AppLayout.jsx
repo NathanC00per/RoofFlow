@@ -6,10 +6,10 @@ import MobileTopBar from "./MobileTopBar";
 import MobileNav from "./MobileNav";
 
 export default function AppLayout() {
-  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
 
   useEffect(() => {
-    const handler = () => setIsDesktop(window.innerWidth >= 768);
+    const handler = () => setIsDesktop(window.innerWidth >= 1024);
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
@@ -18,8 +18,11 @@ export default function AppLayout() {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <MobileTopBar />
-        <main className="flex-1 overflow-y-auto pt-14 pb-20 px-4">
-          <Outlet />
+        {/* pt accounts for top bar (16=64px on mobile, 18=72px on tablet), pb for bottom nav */}
+        <main className="flex-1 overflow-y-auto pt-16 md:pt-[72px] pb-24 md:pb-28 px-3 md:px-6">
+          <div className="max-w-3xl mx-auto">
+            <Outlet />
+          </div>
         </main>
         <MobileNav />
       </div>
