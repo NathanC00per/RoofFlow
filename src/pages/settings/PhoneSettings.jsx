@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import PageHeader from "@/components/shared/PageHeader";
-import { Plus, Save, Trash2, Phone, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, Save, Trash2, Phone, AlertCircle, CheckCircle2, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
+import AfterHoursConfig from "@/components/phone/AfterHoursConfig";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function RouteCard({ route, onUpdate, onDelete, roles, employees, allowedRoles }) {
   const [editing, setEditing] = useState(false);
@@ -64,7 +66,17 @@ function RouteCard({ route, onUpdate, onDelete, roles, employees, allowedRoles }
     <Card className="border-primary/50">
       <CardContent className="p-5 space-y-4">
         <div className="space-y-1.5">
-          <Label className="text-sm">Route Description</Label>
+          <div className="flex items-center gap-2">
+            <Label className="text-sm">Route Description</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>Give this route a name like "Sales", "Support", or "Billing"</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <Input
             value={form.description}
             onChange={e => setForm({ ...form, description: e.target.value })}
@@ -73,7 +85,22 @@ function RouteCard({ route, onUpdate, onDelete, roles, employees, allowedRoles }
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-sm">Routing Type</Label>
+          <div className="flex items-center gap-2">
+            <Label className="text-sm">Routing Type</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-1">Route calls to:</p>
+                  <p className="text-xs">• <strong>By Role</strong> - all employees in a specific role (e.g., all "Sales" staff)</p>
+                  <p className="text-xs">• <strong>By Employee</strong> - specific team members you choose</p>
+                  <p className="text-xs">• <strong>Round-Robin</strong> - distribute calls evenly to all active employees</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <Select value={form.routing_type} onValueChange={v => setForm({ ...form, routing_type: v })}>
             <SelectTrigger>
               <SelectValue />
@@ -139,7 +166,17 @@ function RouteCard({ route, onUpdate, onDelete, roles, employees, allowedRoles }
         )}
 
         <div className="space-y-1.5">
-          <Label className="text-sm">Forward Number (Optional)</Label>
+          <div className="flex items-center gap-2">
+            <Label className="text-sm">Forward Number (Optional)</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>If no one answers after the ring timeout, the call goes to this number (e.g., a mobile or external line)</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <Input
             value={form.forward_number || ""}
             onChange={e => setForm({ ...form, forward_number: e.target.value })}
@@ -232,10 +269,17 @@ export default function PhoneSettings() {
         title="Company Phone Settings"
         subtitle="Configure how incoming calls are routed to employees and roles"
       >
-        <Button onClick={() => setCreatingNew(!creatingNew)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          New Route
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={() => setCreatingNew(!creatingNew)} className="gap-2">
+                <Plus className="w-4 h-4" />
+                New Route
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Create a call route to direct incoming calls to specific people or roles</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </PageHeader>
 
       {/* Twilio Status */}
