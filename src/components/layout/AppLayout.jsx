@@ -9,7 +9,7 @@ export default function AppLayout() {
   return (
     <>
       {/* ── Desktop layout (≥ 1024px) ── */}
-      <div className="hidden lg:flex h-screen overflow-hidden bg-background">
+      <div className="hidden xl:flex h-screen overflow-hidden bg-background">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <TopBar />
@@ -22,7 +22,7 @@ export default function AppLayout() {
       </div>
 
       {/* ── Mobile / Tablet layout (< 1024px) ── */}
-      <div className="flex lg:hidden flex-col min-h-screen bg-background">
+      <div className="flex xl:hidden flex-col min-h-screen bg-background">
         <MobileTopBar />
         <main className="flex-1 overflow-y-auto pt-14 pb-20 px-4">
           <Outlet />
