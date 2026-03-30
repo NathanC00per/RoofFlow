@@ -44,6 +44,7 @@ import Broadcast from './pages/Broadcast';
 import ClientPortal from './pages/ClientPortal';
 import PhoneSettings from './pages/settings/PhoneSettings';
 import CommunicationLogs from './pages/CommunicationLogs';
+import Voicemails from './pages/Voicemails';
 import WebsiteLayout from './pages/website/WebsiteLayout';
 import WebsiteHome from './pages/website/WebsiteHome';
 import WebsiteServices from './pages/website/WebsiteServices';
@@ -113,6 +114,7 @@ const AuthenticatedApp = () => {
         <Route path="/broadcast" element={<Broadcast />} />
         <Route path="/client-portal" element={<ClientPortal />} />
         <Route path="/communications" element={<CommunicationLogs />} />
+        <Route path="/voicemails" element={<Voicemails />} />
       </Route>
       <Route path="/customer" element={<CustomerPortal />} />
       {/* Public website */}

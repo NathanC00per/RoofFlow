@@ -1,0 +1,67 @@
+{
+  "name": "Voicemail",
+  "type": "object",
+  "properties": {
+    "phone_number": {
+      "type": "string",
+      "description": "Caller's phone number"
+    },
+    "caller_name": {
+      "type": "string",
+      "description": "Caller's name if available"
+    },
+    "route_id": {
+      "type": "string",
+      "description": "Phone route this voicemail was received on"
+    },
+    "route_description": {
+      "type": "string",
+      "description": "Denormalized route description"
+    },
+    "audio_url": {
+      "type": "string",
+      "description": "URL to voicemail audio file"
+    },
+    "duration_seconds": {
+      "type": "number",
+      "description": "Length of voicemail in seconds"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the voicemail was received"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "listened",
+        "resolved"
+      ],
+      "default": "new",
+      "description": "Status of the voicemail"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "Email of user assigned to handle voicemail"
+    },
+    "assigned_to_name": {
+      "type": "string",
+      "description": "Denormalized name of assigned user"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes about voicemail or action taken"
+    },
+    "transcription": {
+      "type": "string",
+      "description": "Optional AI-generated transcription of voicemail"
+    }
+  },
+  "required": [
+    "phone_number",
+    "route_id",
+    "audio_url",
+    "received_at"
+  ]
+}

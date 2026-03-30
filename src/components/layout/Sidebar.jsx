@@ -53,6 +53,7 @@ const ALL_NAV_GROUPS = [
       { label: "Timesheets",  path: "/timesheets", icon: Clock,       perm: "timesheets.view" },
       { label: "My Clock-In", path: "/clock-in",   icon: Timer,       perm: null },
       { label: "Schedule",    path: "/schedule",   icon: CalendarDays, perm: "schedule.view" },
+      { label: "Voicemails",  path: "/voicemails", icon: Phone,       perm: "phone.view" },
     ]
   },
   {
