@@ -6,13 +6,24 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const base44 = createClientFromRequest(req);
     const formData = await req.formData();
     const url = new URL(req.url);
 
     const fromPhone = formData.get('From');
     const recordingUrl = formData.get('RecordingUrl');
     const routeId = url.searchParams.get('routeId');
+
+    // Create service-authenticated client for webhook
+    const customReq = new Request(req.url, {
+      method: req.method,
+      headers: {
+        ...Object.fromEntries(req.headers),
+        'X-Base44-Service-Role': 'true',
+      },
+      body: req.body,
+    });
+
+    const base44 = createClientFromRequest(customReq);
 
     console.log(`Voicemail received from ${fromPhone}, recording: ${recordingUrl}`);
 

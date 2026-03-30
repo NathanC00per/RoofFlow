@@ -7,33 +7,59 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const base44 = createClientFromRequest(req);
     const formData = await req.formData();
-    
     const fromPhone = formData.get('From');
     const toPhone = formData.get('To');
     const callSid = formData.get('CallSid');
 
-    // Log the incoming call to CommunicationLog
-    await base44.asServiceRole.entities.CommunicationLog.create({
-      type: 'call',
-      direction: 'incoming',
-      phone_number: fromPhone,
-      timestamp: new Date().toISOString(),
-      status: 'completed',
-    });
-
     console.log(`Incoming call from ${fromPhone} to ${toPhone} (SID: ${callSid})`);
 
+    // Create a service-authenticated request by adding special headers
+    const customReq = new Request(req.url, {
+      method: req.method,
+      headers: {
+        ...Object.fromEntries(req.headers),
+        'X-Base44-Service-Role': 'true',
+      },
+      body: req.body,
+    });
+
+    const base44 = createClientFromRequest(customReq);
+
+    // Log the incoming call to CommunicationLog
+    try {
+      await base44.asServiceRole.entities.CommunicationLog.create({
+        type: 'call',
+        direction: 'incoming',
+        phone_number: fromPhone,
+        timestamp: new Date().toISOString(),
+        status: 'completed',
+      });
+    } catch (logError) {
+      console.log('Could not log call, continuing with routing', logError.message);
+    }
+
     // Check if an IVR is active
-    const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.filter({ is_active: true });
+    let ivrConfigs = [];
+    try {
+      ivrConfigs = await base44.asServiceRole.entities.IVRConfig.filter({ is_active: true });
+    } catch (e) {
+      console.log('Could not fetch IVR configs', e.message);
+    }
+    
     if (ivrConfigs.length > 0) {
       const activeIVR = ivrConfigs[0]; // Use first active IVR
       return generateIVRTwiML(activeIVR);
     }
 
     // Fetch active routing rules sorted by priority
-    const routes = await base44.asServiceRole.entities.PhoneRouting.filter({ is_active: true });
+    let routes = [];
+    try {
+      routes = await base44.asServiceRole.entities.PhoneRouting.filter({ is_active: true });
+    } catch (e) {
+      console.log('Could not fetch routes', e.message);
+    }
+    
     const sortedRoutes = routes.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';

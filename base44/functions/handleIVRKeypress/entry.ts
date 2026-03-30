@@ -6,7 +6,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const base44 = createClientFromRequest(req);
     const formData = await req.formData();
     const url = new URL(req.url);
     
@@ -17,6 +16,18 @@ Deno.serve(async (req) => {
     const attemptNumber = parseInt(formData.get('AttemptNumber') || '1');
 
     console.log(`IVR keypress: ${digit} for config ${ivrConfigId} (attempt ${attemptNumber})`);
+
+    // Create service-authenticated client for webhook
+    const customReq = new Request(req.url, {
+      method: req.method,
+      headers: {
+        ...Object.fromEntries(req.headers),
+        'X-Base44-Service-Role': 'true',
+      },
+      body: req.body,
+    });
+
+    const base44 = createClientFromRequest(customReq);
 
     // Fetch the IVR config
     const ivrConfig = await base44.asServiceRole.entities.IVRConfig.get(ivrConfigId);
