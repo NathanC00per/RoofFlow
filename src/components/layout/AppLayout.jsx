@@ -6,10 +6,10 @@ import MobileTopBar from "./MobileTopBar";
 import MobileNav from "./MobileNav";
 
 export default function AppLayout() {
-  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1400);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
 
   useEffect(() => {
-    const handler = () => setIsDesktop(window.innerWidth >= 1400);
+    const handler = () => setIsDesktop(window.innerWidth >= 768);
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
