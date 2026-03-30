@@ -246,29 +246,32 @@ export default function IVRConfigManager() {
                         </div>
 
                         <div>
-                          <Label className="text-xs text-muted-foreground">Route To</Label>
-                          <Select
-                            value={option.route_id || ""}
-                            onValueChange={(v) => {
-                              const selectedRoute = routes.find((r) => r.id === v);
-                              updateMenuOption(idx, "route_id", v);
-                              if (selectedRoute) {
-                                updateMenuOption(idx, "route_description", selectedRoute.description);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Select route..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {routes.map((r) => (
-                                <SelectItem key={r.id} value={r.id}>
-                                  {r.description}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                           <Label className="text-xs text-muted-foreground">Route To</Label>
+                           <Select
+                             value={option.route_id || ""}
+                             onValueChange={(v) => {
+                               const selectedRoute = routes.find((r) => r.id === v);
+                               const updated = [...form.menu_options];
+                               updated[idx] = {
+                                 ...updated[idx],
+                                 route_id: v,
+                                 route_description: selectedRoute?.description || ""
+                               };
+                               setForm({ ...form, menu_options: updated });
+                             }}
+                           >
+                             <SelectTrigger className="h-8 text-sm">
+                               <SelectValue placeholder="Select route..." />
+                             </SelectTrigger>
+                             <SelectContent>
+                               {routes.map((r) => (
+                                 <SelectItem key={r.id} value={r.id}>
+                                   {r.description}
+                                 </SelectItem>
+                               ))}
+                             </SelectContent>
+                           </Select>
+                         </div>
                       </div>
 
                       <Button
