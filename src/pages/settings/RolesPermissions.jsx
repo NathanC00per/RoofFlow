@@ -13,7 +13,7 @@ import { Plus, Save, Trash2, Shield, ChevronDown, ChevronRight, RotateCcw } from
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 
-function RoleCard({ role, onSave, onDelete }) {
+function RoleCard({ role, canEdit, onSave, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const [name, setName] = useState(role.name);
   const [description, setDescription] = useState(role.description || "");
@@ -69,8 +69,8 @@ function RoleCard({ role, onSave, onDelete }) {
           <Badge variant="secondary" className="flex-shrink-0 text-xs">{role.permissions?.length || 0} permissions</Badge>
         </div>
         <div className="flex items-center gap-2 ml-3" onClick={e => e.stopPropagation()}>
-          {dirty && <Button size="sm" onClick={save} className="gap-1"><Save className="w-3 h-3" />Save</Button>}
-          {!role.is_system && (
+          {dirty && canEdit && <Button size="sm" onClick={save} className="gap-1"><Save className="w-3 h-3" />Save</Button>}
+          {!role.is_system && canEdit && (
             <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => onDelete(role.id)}>
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -147,9 +147,11 @@ function RoleCard({ role, onSave, onDelete }) {
             })}
           </div>
 
-          <Button onClick={save} className="w-full gap-2">
-            <Save className="w-4 h-4" />Save Role
-          </Button>
+          {canEdit && (
+            <Button onClick={save} className="w-full gap-2">
+              <Save className="w-4 h-4" />Save Role
+            </Button>
+          )}
         </CardContent>
       )}
     </Card>
@@ -157,7 +159,7 @@ function RoleCard({ role, onSave, onDelete }) {
 }
 
 export default function RolesPermissions() {
-  const { can } = usePermissions();
+  const { can, isAdmin } = usePermissions();
   const qc = useQueryClient();
   const [newName, setNewName] = useState("");
 
@@ -186,7 +188,10 @@ export default function RolesPermissions() {
     createMutation.mutate({ name: newName.trim(), permissions: [], preset: "custom" });
   }
 
-  if (!can("roles.view")) {
+  const canView = isAdmin || can("roles.view");
+  const canEdit = isAdmin || can("roles.edit");
+
+  if (!canView) {
     return <div className="p-8 text-center text-muted-foreground">You don't have permission to view roles.</div>;
   }
 
@@ -196,7 +201,7 @@ export default function RolesPermissions() {
         title="Roles & Permissions"
         subtitle="Define what each role can see and do across the system"
       >
-        {can("roles.edit") && (
+        {canEdit && (
           <div className="flex items-center gap-2">
             <Input
               value={newName}
@@ -205,7 +210,11 @@ export default function RolesPermissions() {
               className="w-44"
               onKeyDown={e => e.key === "Enter" && handleCreate()}
             />
-            <Button onClick={handleCreate} className="gap-2">
+            <Button
+              onClick={handleCreate}
+              disabled={!newName.trim() || createMutation.isPending}
+              className="gap-2"
+            >
               <Plus className="w-4 h-4" />Create Role
             </Button>
           </div>
@@ -227,6 +236,7 @@ export default function RolesPermissions() {
             <RoleCard
               key={role.id}
               role={role}
+              canEdit={canEdit}
               onSave={(id, data) => saveMutation.mutate({ id, data })}
               onDelete={id => deleteMutation.mutate(id)}
             />
