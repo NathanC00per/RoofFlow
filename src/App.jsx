@@ -40,6 +40,7 @@ import MaintenanceContracts from './pages/maintenance/MaintenanceContracts';
 import MaintenanceContractForm from './pages/maintenance/MaintenanceContractForm';
 import MaintenanceContractDetail from './pages/maintenance/MaintenanceContractDetail';
 import RolesPermissions from './pages/settings/RolesPermissions';
+import Broadcast from './pages/Broadcast';
 import ClientPortal from './pages/ClientPortal';
 import WebsiteLayout from './pages/website/WebsiteLayout';
 import WebsiteHome from './pages/website/WebsiteHome';
@@ -106,6 +107,7 @@ const AuthenticatedApp = () => {
         <Route path="/maintenance/:id/edit" element={<MaintenanceContractForm />} />
         <Route path="/maintenance/:id" element={<MaintenanceContractDetail />} />
         <Route path="/settings/roles" element={<RolesPermissions />} />
+        <Route path="/broadcast" element={<Broadcast />} />
         <Route path="/client-portal" element={<ClientPortal />} />
       </Route>
       <Route path="/customer" element={<CustomerPortal />} />

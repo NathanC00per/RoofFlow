@@ -25,7 +25,8 @@ import {
   CalendarDays,
   Wrench,
   Shield,
-  Globe
+  Globe,
+  Megaphone
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -73,7 +74,8 @@ const ALL_NAV_GROUPS = [
     label: "Team",
     items: [
       { label: "Forum",         path: "/forum",          icon: MessageSquareMore, perm: "forum.view" },
-      { label: "Notifications", path: "/notifications",  icon: Bell,             perm: null },
+      { label: "Notifications", path: "/notifications",  icon: Bell,              perm: null },
+      { label: "Broadcast",     path: "/broadcast",      icon: Megaphone,         perm: null, adminOnly: true },
     ]
   },
   {
@@ -97,11 +99,14 @@ const ALL_NAV_GROUPS = [
 export default function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const { can } = usePermissions();
+  const { can, isAdmin } = usePermissions();
 
   const navGroups = ALL_NAV_GROUPS.map(group => ({
     ...group,
-    items: group.items.filter(item => !item.perm || can(item.perm)),
+    items: group.items.filter(item => {
+      if (item.adminOnly && !isAdmin) return false;
+      return !item.perm || can(item.perm);
+    }),
   })).filter(group => group.items.length > 0);
 
   const co = (() => { try { const s = localStorage.getItem("company_settings"); return s ? JSON.parse(s) : {}; } catch { return {}; } })();
