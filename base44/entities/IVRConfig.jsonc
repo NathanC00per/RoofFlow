@@ -1,0 +1,71 @@
+{
+  "name": "IVRConfig",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "IVR menu name (e.g., 'Main Menu')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of this IVR menu"
+    },
+    "greeting_message": {
+      "type": "string",
+      "description": "Welcome message played to callers"
+    },
+    "menu_options": {
+      "type": "array",
+      "description": "List of IVR menu options",
+      "items": {
+        "type": "object",
+        "properties": {
+          "digit": {
+            "type": "string",
+            "description": "The digit key to press (1-9, 0, *)"
+          },
+          "label": {
+            "type": "string",
+            "description": "Label for the option (e.g., 'Sales')"
+          },
+          "description_text": {
+            "type": "string",
+            "description": "Text read to caller (e.g., 'Press 1 for Sales')"
+          },
+          "route_id": {
+            "type": "string",
+            "description": "ID of the PhoneRouting to use for this option"
+          },
+          "route_description": {
+            "type": "string",
+            "description": "Denormalized route description"
+          }
+        },
+        "required": [
+          "digit",
+          "label"
+        ]
+      }
+    },
+    "timeout_seconds": {
+      "type": "number",
+      "default": 5,
+      "description": "Seconds to wait for caller input"
+    },
+    "max_attempts": {
+      "type": "number",
+      "default": 3,
+      "description": "Number of times to retry if invalid input"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this IVR is active"
+    }
+  },
+  "required": [
+    "name",
+    "greeting_message",
+    "menu_options"
+  ]
+}

@@ -17,6 +17,13 @@ Deno.serve(async (req) => {
     // Log the incoming call
     console.log(`Incoming call from ${fromPhone} to ${toPhone} (SID: ${callSid})`);
 
+    // Check if an IVR is active
+    const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.filter({ is_active: true });
+    if (ivrConfigs.length > 0) {
+      const activeIVR = ivrConfigs[0]; // Use first active IVR
+      return generateIVRTwiML(activeIVR);
+    }
+
     // Fetch active routing rules sorted by priority
     const routes = await base44.asServiceRole.entities.PhoneRouting.filter({ is_active: true });
     const sortedRoutes = routes.sort((a, b) => (b.priority || 0) - (a.priority || 0));
@@ -119,3 +126,22 @@ Deno.serve(async (req) => {
     return new Response('Internal error', { status: 500 });
   }
 });
+
+function generateIVRTwiML(ivrConfig) {
+  let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
+  twiml += '<Say>' + ivrConfig.greeting_message + '</Say>';
+  
+  ivrConfig.menu_options.forEach(opt => {
+    twiml += '<Say>' + opt.description_text + '</Say>';
+  });
+
+  twiml += `<Gather timeout="${ivrConfig.timeout_seconds || 5}" numDigits="1" action="handleIVRKeypress" method="POST">`;
+  twiml += '<Say>Please enter your selection now.</Say>';
+  twiml += '</Gather>';
+  twiml += '</Response>';
+
+  return new Response(twiml, {
+    status: 200,
+    headers: { 'Content-Type': 'application/xml' },
+  });
+}

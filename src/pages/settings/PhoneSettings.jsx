@@ -13,6 +13,7 @@ import { Plus, Save, Trash2, Phone, AlertCircle, CheckCircle2, HelpCircle } from
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 import AfterHoursConfig from "@/components/phone/AfterHoursConfig";
+import IVRConfigManager from "@/components/phone/IVRConfigManager";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function RouteCard({ route, onUpdate, onDelete, roles, employees, allowedRoles }) {
@@ -355,6 +356,11 @@ export default function PhoneSettings() {
           </CardContent>
         </Card>
       )}
+
+      {/* IVR Configuration */}
+      <div className="mt-8 pt-8 border-t">
+        <IVRConfigManager />
+      </div>
 
       {/* Routes List */}
       {sortedRoutes.length === 0 ? (
