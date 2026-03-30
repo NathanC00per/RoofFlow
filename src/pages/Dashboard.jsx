@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Briefcase, Users, Clock, DollarSign, ArrowRight,
-  AlertTriangle, Map, TrendingUp, CheckCircle2, HardHat,
+  AlertTriangle, Map, CheckCircle2, HardHat,
   ChevronRight, Activity, Calendar
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { JobStatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import JobsMap, { MapLegend } from "@/components/maps/JobsMap";
-import { format, subMonths, isAfter, isBefore, startOfMonth } from "date-fns";
+import WeekScheduleStrip from "@/components/dashboard/WeekScheduleStrip";
+import { format, subMonths, isAfter, startOfMonth } from "date-fns";
 import { useMaintenanceAutoGenerate } from "@/hooks/useMaintenanceAutoGenerate";
 
 const TIME_RANGES = [
@@ -140,18 +141,15 @@ export default function Dashboard() {
   const activeEmployees = employees.filter(e => e.status === "active");
   const pendingTimesheets = timesheets.filter(t => t.status === "pending");
 
-  // Revenue from paid/completed invoices
   const totalRevenue = invoices
     .filter(i => ["paid", "partial"].includes(i.status))
     .reduce((sum, i) => sum + (i.amount_paid || i.total || 0), 0);
 
-  // This month revenue
   const thisMonthStart = startOfMonth(new Date());
   const thisMonthRevenue = invoices
     .filter(i => ["paid", "partial"].includes(i.status) && isAfter(new Date(i.updated_date || i.issued_date || ""), thisMonthStart))
     .reduce((sum, i) => sum + (i.amount_paid || i.total || 0), 0);
 
-  // Map
   const rangeConfig = TIME_RANGES.find(r => r.value === mapRange);
   const mapJobs = jobs.filter(job => {
     if (!rangeConfig.months) return true;
@@ -160,7 +158,6 @@ export default function Dashboard() {
   });
   const activeStatuses = [...new Set(mapJobs.map(j => j.status))];
 
-  // Priority items
   const priorityJobs = jobs
     .filter(j => ["high", "emergency"].includes(j.priority) && !["completed", "cancelled"].includes(j.status))
     .slice(0, 5);
@@ -191,7 +188,31 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* KPI Cards */}
+      {/* ── 1. MAP (full width, top) ── */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Map className="w-4 h-4 text-primary" />
+            Jobs Map
+            <span className="text-xs font-normal text-muted-foreground">({mapJobs.length} jobs)</span>
+          </CardTitle>
+          <Select value={mapRange} onValueChange={setMapRange}>
+            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {TIME_RANGES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent>
+          <JobsMap jobs={mapJobs} height="360px" />
+          <MapLegend statuses={activeStatuses} />
+        </CardContent>
+      </Card>
+
+      {/* ── 2. THIS WEEK'S SCHEDULE ── */}
+      <WeekScheduleStrip />
+
+      {/* ── 3. KPI CARDS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Active Jobs"
@@ -231,7 +252,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Quick stats bar */}
+      {/* ── 4. QUICK STATS BAR ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "Leads", value: leads.length, color: "text-blue-600", bg: "bg-blue-50", link: "/jobs" },
@@ -248,28 +269,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Map */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Map className="w-4 h-4 text-primary" />
-            Jobs Map
-            <span className="text-xs font-normal text-muted-foreground">({mapJobs.length} jobs)</span>
-          </CardTitle>
-          <Select value={mapRange} onValueChange={setMapRange}>
-            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {TIME_RANGES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </CardHeader>
-        <CardContent>
-          <JobsMap jobs={mapJobs} height="340px" />
-          <MapLegend statuses={activeStatuses} />
-        </CardContent>
-      </Card>
-
-      {/* Bottom 3-column grid */}
+      {/* ── 5. BOTTOM 3-COLUMN GRID ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Active Jobs */}
