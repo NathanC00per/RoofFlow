@@ -135,7 +135,7 @@ function generateIVRTwiML(ivrConfig) {
     twiml += '<Say>' + escapeXml(opt.description_text) + '</Say>';
   });
 
-  twiml += `<Gather timeout="${ivrConfig.timeout_seconds || 5}" numDigits="1" method="POST">`;
+  twiml += `<Gather timeout="${ivrConfig.timeout_seconds || 5}" numDigits="1" action="?configId=${ivrConfig.id}" method="POST">`;
   twiml += '<Say>Please enter your selection now.</Say>';
   twiml += '</Gather>';
   twiml += '<Say>Thank you. Goodbye.</Say>';

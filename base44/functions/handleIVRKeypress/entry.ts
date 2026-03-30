@@ -8,9 +8,10 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const formData = await req.formData();
+    const url = new URL(req.url);
     
     const digit = formData.get('Digits');
-    const ivrConfigId = formData.get('IVRConfigId');
+    const ivrConfigId = url.searchParams.get('configId');
     const fromPhone = formData.get('From');
     const callSid = formData.get('CallSid');
     const attemptNumber = parseInt(formData.get('AttemptNumber') || '1');
@@ -135,13 +136,13 @@ async function generateRouteTwiML(base44, route, fromPhone) {
 function generateRetryTwiML(ivrConfig, attemptNumber, ivrConfigId, fromPhone, callSid) {
   let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
   twiml += '<Say>Sorry, that was not a valid option.</Say>';
-  twiml += '<Say>' + ivrConfig.greeting_message + '</Say>';
+  twiml += '<Say>' + escapeXml(ivrConfig.greeting_message) + '</Say>';
   
   ivrConfig.menu_options.forEach(opt => {
-    twiml += '<Say>' + opt.description_text + '</Say>';
+    twiml += '<Say>' + escapeXml(opt.description_text) + '</Say>';
   });
 
-  twiml += `<Gather timeout="${ivrConfig.timeout_seconds}" numDigits="1" action="handleIVRKeypress" method="POST">`;
+  twiml += `<Gather timeout="${ivrConfig.timeout_seconds}" numDigits="1" action="?configId=${ivrConfigId}" method="POST">`;
   twiml += '<Say>Please enter your selection now.</Say>';
   twiml += '</Gather>';
   twiml += '</Response>';
@@ -154,12 +155,26 @@ function generateRetryTwiML(ivrConfig, attemptNumber, ivrConfigId, fromPhone, ca
 
 function generateErrorTwiML(message) {
   let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
-  twiml += '<Say>' + message + '</Say>';
+  twiml += '<Say>' + escapeXml(message) + '</Say>';
   twiml += '<Record maxLength="120" />';
   twiml += '</Response>';
 
   return new Response(twiml, {
     status: 200,
     headers: { 'Content-Type': 'application/xml' },
+  });
+}
+
+function escapeXml(str) {
+  if (!str) return '';
+  return str.replace(/[<>&'"]/g, c => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case "'": return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
   });
 }
