@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       // No IVR configured, go straight to voicemail
       let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
       twiml += '<Say>Thank you for calling. Please leave a message after the tone.</Say>';
-      twiml += '<Record maxLength="120" action="/functions/handleVoicemail" />';
+      twiml += '<Record maxLength="120" action="https://app.base44.dev/functions/handleVoicemail" />';
       twiml += '</Response>';
       return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
     }
@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     // Build and return IVR menu with Gather
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     twiml += `<Say>${escapeXml(activeIvr.greeting_message)}</Say>`;
-    twiml += `<Gather numDigits="1" timeout="${activeIvr.timeout_seconds}" action="/functions/handleIVRKeypress" method="POST">`;
+    twiml += `<Gather numDigits="1" timeout="${activeIvr.timeout_seconds}" action="https://app.base44.dev/functions/handleIVRKeypress" method="POST">`;
     
     for (const option of activeIvr.menu_options) {
       twiml += `<Say>${escapeXml(option.description_text)}</Say>`;
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     
     twiml += '</Gather>';
     twiml += '<Say>We did not receive any input. Please try again.</Say>';
-    twiml += '<Redirect>/functions/handleIncomingCall</Redirect>';
+    twiml += '<Redirect>https://app.base44.dev/functions/handleIncomingCall</Redirect>';
     twiml += '</Response>';
 
     return new Response(twiml, {
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     // Fallback to voicemail on error
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     twiml += '<Say>Thank you for calling. Please leave a message after the tone.</Say>';
-    twiml += '<Record maxLength="120" action="/functions/handleVoicemail" />';
+    twiml += '<Record maxLength="120" action="https://app.base44.dev/functions/handleVoicemail" />';
     twiml += '</Response>';
     return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
   }

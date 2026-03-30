@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
       // Outside business hours - voicemail with closed message
       let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
       twiml += '<Say>We are currently closed. Please leave a message and we will get back to you.</Say>';
-      twiml += `<Record maxLength="120" action="/functions/handleVoicemail" />`;
+      twiml += `<Record maxLength="120" action="https://app.base44.dev/functions/handleVoicemail" />`;
       twiml += '</Response>';
       return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
     }
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
       twiml += `<Dial timeout="${route.ring_timeout}">${escapeXml(route.forward_number)}</Dial>`;
       twiml += '<Say>The line is busy or did not answer. Please leave a message.</Say>';
-      twiml += `<Record maxLength="120" action="/functions/handleVoicemail" />`;
+      twiml += `<Record maxLength="120" action="https://app.base44.dev/functions/handleVoicemail" />`;
       twiml += '</Response>';
       return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
     }
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 function voicemailResponse() {
   let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
   twiml += '<Say>Thank you. Please leave a message after the tone.</Say>';
-  twiml += '<Record maxLength="120" action="/functions/handleVoicemail" />';
+  twiml += '<Record maxLength="120" action="https://app.base44.dev/functions/handleVoicemail" />';
   twiml += '</Response>';
   return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
 }
