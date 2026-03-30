@@ -1,12 +1,39 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getCompanySettings } from "@/pages/settings/CompanySettings";
-import { Search, X, Briefcase, FileText, Receipt, UserCircle, Bell } from "lucide-react";
+import { Search, X, Briefcase, FileText, Receipt, UserCircle, Bell, Menu,
+  LayoutDashboard, CalendarDays, Users, Clock, Wrench, BarChart2, Wallet,
+  Package, MessageSquareMore, Settings, Shield, LayoutTemplate, Building2,
+  PlusCircle, Timer, Kanban, Globe } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import { cn } from "@/lib/utils";
+
+const NAV_ITEMS = [
+  { label: "Dashboard",    path: "/",                   icon: LayoutDashboard },
+  { label: "New Job",      path: "/jobs/new",            icon: PlusCircle,      perm: "jobs.create" },
+  { label: "Jobs",         path: "/jobs",                icon: Briefcase,       perm: "jobs.view" },
+  { label: "Job Board",    path: "/job-dashboard",       icon: Kanban,          perm: "jobs.view" },
+  { label: "Schedule",     path: "/schedule",            icon: CalendarDays,    perm: "schedule.view" },
+  { label: "Employees",    path: "/employees",           icon: Users,           perm: "employees.view" },
+  { label: "Timesheets",   path: "/timesheets",          icon: Clock,           perm: "timesheets.view" },
+  { label: "Clock-In",     path: "/clock-in",            icon: Timer },
+  { label: "Maintenance",  path: "/maintenance",         icon: Wrench,          perm: "maintenance.view" },
+  { label: "Finance",      path: "/finance",             icon: BarChart2,       perm: "finance.view" },
+  { label: "Estimates",    path: "/estimates",           icon: FileText,        perm: "estimates.view" },
+  { label: "Invoices",     path: "/invoices",            icon: Receipt,         perm: "invoices.view" },
+  { label: "Expenses",     path: "/expenses",            icon: Wallet,          perm: "expenses.view" },
+  { label: "Materials",    path: "/materials",           icon: Package,         perm: "materials.view" },
+  { label: "Customers",    path: "/customers",           icon: UserCircle,      perm: "customers.view" },
+  { label: "Forum",        path: "/forum",               icon: MessageSquareMore, perm: "forum.view" },
+  { label: "Public Site",  path: "/website",             icon: Globe },
+  { label: "Company",      path: "/settings/company",    icon: Building2,       perm: "settings.view" },
+  { label: "Roles",        path: "/settings/roles",      icon: Shield,          perm: "roles.view" },
+  { label: "Templates",    path: "/settings/templates",  icon: LayoutTemplate,  perm: "settings.view" },
+];
 
 const SEARCH_SCOPES = [
   { key: "jobs",      label: "Job",      icon: Briefcase,  path: r => `/jobs/${r.id}`,       display: r => `${r.customer_name} — ${r.address || ""}` },
@@ -16,12 +43,16 @@ const SEARCH_SCOPES = [
 
 export default function MobileTopBar() {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+  const { can } = usePermissions();
   const co = getCompanySettings();
   const primary = co.primaryColor || "#1e3a5f";
   const accent  = co.accentColor  || "#e8730a";
+  const visibleNav = NAV_ITEMS.filter(i => !i.perm || can(i.perm));
 
   const { data: jobs = [] }      = useQuery({ queryKey: ["jobs"],      queryFn: () => base44.entities.Job.list(),      enabled: searchOpen });
   const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: () => base44.entities.Customer.list(), enabled: searchOpen });
@@ -100,13 +131,61 @@ export default function MobileTopBar() {
   }
 
   return (
+    <>
+      {/* Nav drawer overlay */}
+      {navOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setNavOpen(false)} />
+      )}
+
+      {/* Nav drawer */}
+      {navOpen && (
+        <div className="fixed top-0 left-0 bottom-0 z-50 w-72 bg-background border-r shadow-2xl overflow-y-auto flex flex-col">
+          <div className="flex items-center gap-3 px-4 h-14 border-b flex-shrink-0">
+            {co.logoUrl
+              ? <img src={co.logoUrl} alt="" className="h-8 w-8 rounded-lg object-contain" style={{ background: `${primary}20` }} />
+              : <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ background: primary }}>{(co.companyName || "R")[0]}</div>
+            }
+            <span className="font-bold text-sm tracking-tight">{co.companyName || "RoofPro"}</span>
+            <button onClick={() => setNavOpen(false)} className="ml-auto p-1.5 rounded-lg text-muted-foreground hover:bg-muted">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <nav className="flex-1 p-3 space-y-0.5">
+            {visibleNav.map(item => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setNavOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                    isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
+
     <header
       className="fixed top-0 left-0 right-0 z-40 border-b bg-background/95 backdrop-blur-md"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="flex items-center justify-between h-14 px-4">
-        {/* Brand */}
+        {/* Hamburger + Brand */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setNavOpen(true)}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
           {co.logoUrl
             ? <img src={co.logoUrl} alt="" className="h-8 w-8 rounded-lg object-contain" style={{ background: `${primary}20` }} />
             : <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ background: primary }}>{(co.companyName || "R")[0]}</div>
@@ -129,5 +208,6 @@ export default function MobileTopBar() {
         </div>
       </div>
     </header>
+    </>
   );
 }
