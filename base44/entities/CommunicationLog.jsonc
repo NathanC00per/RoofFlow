@@ -1,0 +1,79 @@
+{
+  "name": "CommunicationLog",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "call",
+        "sms"
+      ],
+      "description": "Type of communication"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "incoming",
+        "outgoing"
+      ],
+      "description": "Call or message direction"
+    },
+    "phone_number": {
+      "type": "string",
+      "description": "Caller/recipient phone number"
+    },
+    "contact_name": {
+      "type": "string",
+      "description": "Name of the caller/recipient if available"
+    },
+    "message_body": {
+      "type": "string",
+      "description": "SMS message content (for SMS only)"
+    },
+    "duration_seconds": {
+      "type": "number",
+      "description": "Call duration in seconds (for calls only)"
+    },
+    "routed_to_employee_id": {
+      "type": "string",
+      "description": "ID of the employee the call was routed to"
+    },
+    "routed_to_employee_name": {
+      "type": "string",
+      "description": "Denormalized employee name"
+    },
+    "routed_to_role": {
+      "type": "string",
+      "description": "Role the call was routed to"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the call/message occurred"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "missed",
+        "failed"
+      ],
+      "default": "completed",
+      "description": "Status of the call/message"
+    },
+    "related_job_id": {
+      "type": "string",
+      "description": "Optional reference to a related job"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the communication"
+    }
+  },
+  "required": [
+    "type",
+    "direction",
+    "phone_number",
+    "timestamp"
+  ]
+}

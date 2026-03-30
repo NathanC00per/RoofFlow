@@ -43,6 +43,7 @@ const ALL_NAV_GROUPS = [
       { label: "New Job",     path: "/jobs/new",      icon: PlusCircle,      perm: "jobs.create" },
       { label: "All Jobs",    path: "/jobs",           icon: Briefcase,       perm: "jobs.view" },
       { label: "Maintenance", path: "/maintenance",    icon: Wrench,          perm: "maintenance.view" },
+      { label: "Communications", path: "/communications", icon: Phone,       perm: null },
     ]
   },
   {
