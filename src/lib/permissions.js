@@ -71,6 +71,10 @@ export const ALL_PERMISSIONS = {
   "roles.view":   "View Roles & Permissions",
   "roles.edit":   "Edit Roles & Permissions",
 
+  // Phone Routing
+  "phone.view":   "View Phone Settings",
+  "phone.manage": "Manage Phone Routing",
+
   // Forum
   "forum.view":   "View Team Forum",
   "forum.post":   "Post in Forum",
@@ -88,6 +92,7 @@ export const PERMISSION_GROUPS = [
   { label: "Materials",    keys: ["materials.view","materials.create","materials.edit","materials.delete"] },
   { label: "Maintenance",  keys: ["maintenance.view","maintenance.create","maintenance.edit","maintenance.delete"] },
   { label: "Forum",        keys: ["forum.view","forum.post"] },
+  { label: "Phone",        keys: ["phone.view","phone.manage"] },
   { label: "Settings",     keys: ["settings.view","settings.edit","roles.view","roles.edit"] },
 ];
 
@@ -102,6 +107,23 @@ export const ROLE_PRESETS = {
     label: "Manager",
     description: "Everything except settings/roles editing",
     permissions: Object.keys(ALL_PERMISSIONS).filter(p => !["settings.edit","roles.edit"].includes(p)),
+  },
+  office: {
+    label: "Office",
+    description: "Invoices, customers, estimates, finance, phone routing — no field ops",
+    permissions: [
+      "jobs.view",
+      "estimates.view","estimates.create","estimates.edit",
+      "invoices.view","invoices.create","invoices.edit",
+      "finance.view",
+      "expenses.view","expenses.create","expenses.edit",
+      "customers.view","customers.create","customers.edit","customers.delete",
+      "timesheets.view","timesheets.approve",
+      "materials.view",
+      "maintenance.view","maintenance.create","maintenance.edit",
+      "phone.view","phone.manage",
+      "forum.view","forum.post",
+    ],
   },
   foreman: {
     label: "Foreman",
@@ -126,22 +148,6 @@ export const ROLE_PRESETS = {
       "estimates.view","estimates.create","estimates.edit",
       "customers.view","customers.create","customers.edit",
       "materials.view",
-      "forum.view","forum.post",
-    ],
-  },
-  office: {
-    label: "Office",
-    description: "Invoices, customers, estimates, finance — no field ops",
-    permissions: [
-      "jobs.view",
-      "estimates.view","estimates.create","estimates.edit",
-      "invoices.view","invoices.create","invoices.edit",
-      "finance.view",
-      "expenses.view","expenses.create","expenses.edit",
-      "customers.view","customers.create","customers.edit","customers.delete",
-      "timesheets.view","timesheets.approve",
-      "materials.view",
-      "maintenance.view","maintenance.create","maintenance.edit",
       "forum.view","forum.post",
     ],
   },

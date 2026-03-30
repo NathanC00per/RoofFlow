@@ -13,7 +13,7 @@ import { Plus, Save, Trash2, Phone, AlertCircle, CheckCircle2 } from "lucide-rea
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 
-function RouteCard({ route, onUpdate, onDelete, roles, employees }) {
+function RouteCard({ route, onUpdate, onDelete, roles, employees, allowedRoles }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(route);
 
@@ -94,7 +94,7 @@ function RouteCard({ route, onUpdate, onDelete, roles, employees }) {
                 <SelectValue placeholder="Choose a role..." />
               </SelectTrigger>
               <SelectContent>
-                {roles.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
+                {allowedRoles.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -178,7 +178,7 @@ function RouteCard({ route, onUpdate, onDelete, roles, employees }) {
 }
 
 export default function PhoneSettings() {
-  const { isAdmin } = usePermissions();
+  const { isAdmin, can } = usePermissions();
   const qc = useQueryClient();
   const [creatingNew, setCreatingNew] = useState(false);
 
@@ -212,9 +212,17 @@ export default function PhoneSettings() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["phone_routing"] }); setCreatingNew(false); toast.success("Route created"); },
   });
 
-  if (!isAdmin) {
-    return <div className="p-8 text-center text-muted-foreground">Admin access required.</div>;
+  if (!isAdmin && !can("phone.manage")) {
+    return <div className="p-8 text-center text-muted-foreground">Phone management access required.</div>;
   }
+
+  // Filter roles based on permissions
+  const allowedRoles = roles.filter(r => {
+    // Admins can assign any role
+    if (isAdmin) return true;
+    // Non-admins can only assign roles they have access to
+    return can(r.name.toLowerCase());
+  });
 
   const sortedRoutes = [...routes].sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
@@ -287,13 +295,13 @@ export default function PhoneSettings() {
               <div className="space-y-1.5">
                 <Label className="text-sm">Target Role</Label>
                 <Select name="target_role">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a role..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a role..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allowedRoles.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setCreatingNew(false)}>Cancel</Button>
@@ -315,17 +323,18 @@ export default function PhoneSettings() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {sortedRoutes.map(route => (
-            <RouteCard
-              key={route.id}
-              route={route}
-              roles={roles}
-              employees={employees}
-              onUpdate={(id, data) => updateMutation.mutate({ id, data })}
-              onDelete={id => deleteMutation.mutate(id)}
-            />
-          ))}
-        </div>
+           {sortedRoutes.map(route => (
+             <RouteCard
+               key={route.id}
+               route={route}
+               roles={roles}
+               employees={employees}
+               allowedRoles={allowedRoles}
+               onUpdate={(id, data) => updateMutation.mutate({ id, data })}
+               onDelete={id => deleteMutation.mutate(id)}
+             />
+           ))}
+         </div>
       )}
     </div>
   );
