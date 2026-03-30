@@ -129,19 +129,34 @@ Deno.serve(async (req) => {
 
 function generateIVRTwiML(ivrConfig) {
   let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
-  twiml += '<Say>' + ivrConfig.greeting_message + '</Say>';
-  
+  twiml += '<Say>' + escapeXml(ivrConfig.greeting_message) + '</Say>';
+
   ivrConfig.menu_options.forEach(opt => {
-    twiml += '<Say>' + opt.description_text + '</Say>';
+    twiml += '<Say>' + escapeXml(opt.description_text) + '</Say>';
   });
 
-  twiml += `<Gather timeout="${ivrConfig.timeout_seconds || 5}" numDigits="1" action="handleIVRKeypress" method="POST">`;
+  twiml += `<Gather timeout="${ivrConfig.timeout_seconds || 5}" numDigits="1" method="POST">`;
   twiml += '<Say>Please enter your selection now.</Say>';
   twiml += '</Gather>';
+  twiml += '<Say>Thank you. Goodbye.</Say>';
   twiml += '</Response>';
 
   return new Response(twiml, {
     status: 200,
     headers: { 'Content-Type': 'application/xml' },
+  });
+}
+
+function escapeXml(str) {
+  if (!str) return '';
+  return str.replace(/[<>&'"]/g, c => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case "'": return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
   });
 }
