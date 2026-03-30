@@ -25,6 +25,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { createNotification } from "@/hooks/useNotifications";
+import SmsButton from "@/components/sms/SmsButton";
 
 const JOB_TYPE_LABELS = {
   new_roof: "New Roof", repair: "Repair", inspection: "Inspection",
@@ -260,9 +261,12 @@ export default function JobDetail() {
             <CardContent className="space-y-3">
               <p className="font-semibold">{job.customer_name}</p>
               {job.customer_phone && (
-                <a href={`tel:${job.customer_phone}`} className="text-sm flex items-center gap-2 text-primary hover:underline">
-                  <Phone className="w-3.5 h-3.5" /> {job.customer_phone}
-                </a>
+                <div className="flex items-center gap-2">
+                  <a href={`tel:${job.customer_phone}`} className="text-sm flex items-center gap-2 text-primary hover:underline flex-1">
+                    <Phone className="w-3.5 h-3.5" /> {job.customer_phone}
+                  </a>
+                  <SmsButton phone={job.customer_phone} job={job} size="sm" label="SMS" />
+                </div>
               )}
               {job.customer_email && (
                 <a href={`mailto:${job.customer_email}`} className="text-sm flex items-center gap-2 text-primary hover:underline">
