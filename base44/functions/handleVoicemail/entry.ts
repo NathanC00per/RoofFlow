@@ -1,4 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClient } from 'npm:@base44/sdk@0.8.23';
+
+const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -11,21 +13,14 @@ Deno.serve(async (req) => {
     const fromPhone = params.get('From');
     const recordingUrl = params.get('RecordingUrl');
     const recordingDuration = params.get('RecordingDuration');
-    const toPhone = params.get('To');
 
     console.log(`Voicemail received from ${fromPhone}: ${recordingUrl}`);
 
-    const newReq = new Request(req.url, { method: req.method, headers: req.headers, body: bodyText });
-    // Create service-role client for database writes
-    const base44 = createClientFromRequest(newReq);
-
-    // Get the default/first route for now (in future, this would be selected based on IVR choice)
     const routes = await base44.asServiceRole.entities.PhoneRouting.list();
-    const route = routes[0]; // Use first route as default
+    const route = routes[0];
     const routeId = route?.id;
     const routeDescription = route?.description || 'Unknown Route';
 
-    // Create Voicemail record
     const voicemail = await base44.asServiceRole.entities.Voicemail.create({
       phone_number: fromPhone,
       route_id: routeId,
@@ -38,7 +33,6 @@ Deno.serve(async (req) => {
 
     console.log(`Created voicemail: ${voicemail.id}`);
 
-    // Create CommunicationLog entry
     await base44.asServiceRole.entities.CommunicationLog.create({
       type: 'call',
       direction: 'incoming',
@@ -49,28 +43,16 @@ Deno.serve(async (req) => {
       notes: `Voicemail recorded. Route: ${routeDescription}`,
     });
 
-    console.log('Created communication log');
-
-    // Return TwiML response
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     twiml += '<Say>Thank you. Your message has been recorded. Goodbye.</Say>';
     twiml += '</Response>';
 
-    return new Response(twiml, {
-      status: 200,
-      headers: { 'Content-Type': 'application/xml' },
-    });
+    return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
   } catch (error) {
-    console.error('Error handling voicemail:', error);
-    
-    // Still return valid TwiML even on error
+    console.error('Error handling voicemail:', error.message, error.stack);
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     twiml += '<Say>Thank you. Goodbye.</Say>';
     twiml += '</Response>';
-    
-    return new Response(twiml, {
-      status: 200,
-      headers: { 'Content-Type': 'application/xml' },
-    });
+    return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
   }
 });
