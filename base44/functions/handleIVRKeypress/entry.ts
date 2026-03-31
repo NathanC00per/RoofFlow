@@ -1,4 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClient } from 'npm:@base44/sdk@0.8.23';
+
+const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -27,14 +29,6 @@ Deno.serve(async (req) => {
 
     console.log(`IVR keypress: digit=${digit} from=${fromPhone}`);
 
-    const newReq = new Request(req.url, {
-      method: req.method,
-      headers: req.headers,
-      body: bodyText,
-    });
-    const base44 = createClientFromRequest(newReq);
-
-    // Fetch IVR config and route in parallel
     const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.list();
     const activeIvr = ivrConfigs.find(ivr => ivr.is_active) || ivrConfigs[0];
 
@@ -57,7 +51,7 @@ Deno.serve(async (req) => {
     const isOpen = isWithinBusinessHours(route.business_hours);
     console.log(`Business hours open: ${isOpen}`);
 
-    // Log call in background (don't await — keep response fast)
+    // Log call in background
     base44.asServiceRole.entities.CommunicationLog.create({
       type: 'call',
       direction: 'incoming',
@@ -85,7 +79,6 @@ Deno.serve(async (req) => {
       return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
     }
 
-    // No forward number — go to voicemail
     console.log('No forward_number on route, going to voicemail');
     return voicemailResponse();
 

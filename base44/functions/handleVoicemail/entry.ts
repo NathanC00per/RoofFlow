@@ -1,4 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClient } from 'npm:@base44/sdk@0.8.23';
+
+const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -13,13 +15,6 @@ Deno.serve(async (req) => {
     const recordingDuration = params.get('RecordingDuration');
 
     console.log(`Voicemail received from ${fromPhone}: ${recordingUrl}`);
-
-    const newReq = new Request(req.url, {
-      method: req.method,
-      headers: req.headers,
-      body: bodyText,
-    });
-    const base44 = createClientFromRequest(newReq);
 
     const routes = await base44.asServiceRole.entities.PhoneRouting.list();
     const route = routes[0];
@@ -36,7 +31,7 @@ Deno.serve(async (req) => {
       status: 'new',
     });
 
-    await base44.asServiceRole.entities.CommunicationLog.create({
+    base44.asServiceRole.entities.CommunicationLog.create({
       type: 'call',
       direction: 'incoming',
       phone_number: fromPhone,
@@ -44,7 +39,7 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString(),
       status: 'completed',
       notes: `Voicemail recorded. Route: ${routeDescription}`,
-    });
+    }).catch(e => console.error('Log error:', e.message));
 
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     twiml += '<Say>Thank you. Your message has been recorded. Goodbye.</Say>';

@@ -1,4 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClient } from 'npm:@base44/sdk@0.8.23';
+
+const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -13,14 +15,6 @@ Deno.serve(async (req) => {
     const callSid = params.get('CallSid');
 
     console.log(`Incoming call from ${fromPhone} to ${toPhone} (SID: ${callSid})`);
-
-    // Reconstruct request with body so SDK can read headers for auth
-    const newReq = new Request(req.url, {
-      method: req.method,
-      headers: req.headers,
-      body: bodyText,
-    });
-    const base44 = createClientFromRequest(newReq);
 
     const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.list();
     const activeIvr = ivrConfigs.find(ivr => ivr.is_active) || ivrConfigs[0];
