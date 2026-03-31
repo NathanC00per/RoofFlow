@@ -7,9 +7,23 @@ Deno.serve(async (req) => {
 
   try {
     const bodyText = await req.text();
-    const params = new URLSearchParams(bodyText);
-    const digit = params.get('Digits');
-    const fromPhone = params.get('From');
+    const contentType = req.headers.get('content-type') || '';
+    const urlParams = new URL(req.url).searchParams;
+
+    console.log(`Content-Type: ${contentType}`);
+    console.log(`Raw body: ${bodyText}`);
+
+    let digit, fromPhone;
+
+    if (contentType.includes('application/json')) {
+      const json = JSON.parse(bodyText || '{}');
+      digit = json.Digits;
+      fromPhone = json.From;
+    } else {
+      const bodyParams = new URLSearchParams(bodyText);
+      digit = bodyParams.get('Digits') || urlParams.get('Digits');
+      fromPhone = bodyParams.get('From') || urlParams.get('From');
+    }
 
     console.log(`IVR keypress: digit=${digit} from=${fromPhone}`);
 
@@ -20,11 +34,12 @@ Deno.serve(async (req) => {
     });
     const base44 = createClientFromRequest(newReq);
 
+    // Fetch IVR config and route in parallel
     const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.list();
     const activeIvr = ivrConfigs.find(ivr => ivr.is_active) || ivrConfigs[0];
 
     if (!activeIvr) {
-      console.log('No active IVR found, going to voicemail');
+      console.log('No active IVR, going to voicemail');
       return voicemailResponse();
     }
 
@@ -32,25 +47,26 @@ Deno.serve(async (req) => {
     console.log(`Selected option: ${JSON.stringify(selectedOption)}`);
 
     if (!selectedOption || !selectedOption.route_id) {
-      console.log('No matching option or route, going to voicemail');
+      console.log('No matching option, going to voicemail');
       return voicemailResponse();
     }
 
     const route = await base44.asServiceRole.entities.PhoneRouting.get(selectedOption.route_id);
-    console.log(`Route: ${JSON.stringify(route)}`);
+    console.log(`Route found: ${route?.description}, forward_number: ${route?.forward_number}`);
 
     const isOpen = isWithinBusinessHours(route.business_hours);
-    console.log(`Is within business hours: ${isOpen}`);
+    console.log(`Business hours open: ${isOpen}`);
 
-    await base44.asServiceRole.entities.CommunicationLog.create({
+    // Log call in background (don't await — keep response fast)
+    base44.asServiceRole.entities.CommunicationLog.create({
       type: 'call',
       direction: 'incoming',
       phone_number: fromPhone,
       timestamp: new Date().toISOString(),
       status: 'completed',
       routed_to_role: route.routing_type === 'role' ? route.target_role : undefined,
-      notes: `Routed via IVR option ${digit}`,
-    });
+      notes: `Routed via IVR option ${digit} - ${selectedOption.label}`,
+    }).catch(e => console.error('Log error:', e.message));
 
     if (!isOpen) {
       let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
@@ -62,14 +78,17 @@ Deno.serve(async (req) => {
 
     if (route.forward_number) {
       let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
-      twiml += `<Dial timeout="${route.ring_timeout}">${escapeXml(route.forward_number)}</Dial>`;
+      twiml += `<Dial timeout="${route.ring_timeout || 30}">${escapeXml(route.forward_number)}</Dial>`;
       twiml += '<Say>The line is busy or did not answer. Please leave a message.</Say>';
       twiml += `<Record maxLength="120" action="${baseUrl()}/functions/handleVoicemail" />`;
       twiml += '</Response>';
       return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
     }
 
+    // No forward number — go to voicemail
+    console.log('No forward_number on route, going to voicemail');
     return voicemailResponse();
+
   } catch (error) {
     console.error('Error handling IVR keypress:', error.message, error.stack);
     return voicemailResponse();
@@ -90,14 +109,11 @@ function voicemailResponse() {
 
 function isWithinBusinessHours(businessHours) {
   if (!businessHours) return true;
-
   const now = new Date();
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const dayName = dayNames[now.getDay()];
   const dayHours = businessHours[dayName];
-
   if (!dayHours || !dayHours.enabled) return false;
-
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   return currentTime >= dayHours.start_time && currentTime <= dayHours.end_time;
 }
