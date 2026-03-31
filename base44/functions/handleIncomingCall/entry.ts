@@ -1,6 +1,4 @@
-import { createClient } from 'npm:@base44/sdk@0.8.23';
-
-const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -16,6 +14,14 @@ Deno.serve(async (req) => {
 
     console.log(`Incoming call from ${fromPhone} to ${toPhone} (SID: ${callSid})`);
 
+    // Reconstruct request with body so SDK can read headers for auth
+    const newReq = new Request(req.url, {
+      method: req.method,
+      headers: req.headers,
+      body: bodyText,
+    });
+    const base44 = createClientFromRequest(newReq);
+
     const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.list();
     const activeIvr = ivrConfigs.find(ivr => ivr.is_active) || ivrConfigs[0];
 
@@ -28,14 +34,11 @@ Deno.serve(async (req) => {
     }
 
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
+    twiml += `<Gather numDigits="1" timeout="${activeIvr.timeout_seconds}" action="${baseUrl()}/functions/handleIVRKeypress" method="POST">`;
     twiml += `<Say>${escapeXml(activeIvr.greeting_message)}</Say>`;
-
     for (const option of activeIvr.menu_options) {
       twiml += `<Say>${escapeXml(option.description_text)}</Say>`;
     }
-
-    twiml += `<Gather numDigits="1" timeout="${activeIvr.timeout_seconds}" action="${baseUrl()}/functions/handleIVRKeypress" method="POST">`;
-    twiml += '<Say>Please press a key now.</Say>';
     twiml += '</Gather>';
     twiml += '<Say>We did not receive any input. Goodbye.</Say>';
     twiml += '</Response>';

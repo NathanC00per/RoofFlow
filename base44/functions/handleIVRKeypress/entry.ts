@@ -1,6 +1,4 @@
-import { createClient } from 'npm:@base44/sdk@0.8.23';
-
-const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -15,7 +13,13 @@ Deno.serve(async (req) => {
 
     console.log(`IVR keypress: digit=${digit} from=${fromPhone}`);
 
-    // Get IVR config and find matching option
+    const newReq = new Request(req.url, {
+      method: req.method,
+      headers: req.headers,
+      body: bodyText,
+    });
+    const base44 = createClientFromRequest(newReq);
+
     const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.list();
     const activeIvr = ivrConfigs.find(ivr => ivr.is_active) || ivrConfigs[0];
 
@@ -32,14 +36,12 @@ Deno.serve(async (req) => {
       return voicemailResponse();
     }
 
-    // Get the route details
     const route = await base44.asServiceRole.entities.PhoneRouting.get(selectedOption.route_id);
     console.log(`Route: ${JSON.stringify(route)}`);
 
     const isOpen = isWithinBusinessHours(route.business_hours);
     console.log(`Is within business hours: ${isOpen}`);
 
-    // Log the call
     await base44.asServiceRole.entities.CommunicationLog.create({
       type: 'call',
       direction: 'incoming',

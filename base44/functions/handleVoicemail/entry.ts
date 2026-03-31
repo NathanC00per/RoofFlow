@@ -1,6 +1,4 @@
-import { createClient } from 'npm:@base44/sdk@0.8.23';
-
-const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -16,12 +14,19 @@ Deno.serve(async (req) => {
 
     console.log(`Voicemail received from ${fromPhone}: ${recordingUrl}`);
 
+    const newReq = new Request(req.url, {
+      method: req.method,
+      headers: req.headers,
+      body: bodyText,
+    });
+    const base44 = createClientFromRequest(newReq);
+
     const routes = await base44.asServiceRole.entities.PhoneRouting.list();
     const route = routes[0];
     const routeId = route?.id;
     const routeDescription = route?.description || 'Unknown Route';
 
-    const voicemail = await base44.asServiceRole.entities.Voicemail.create({
+    await base44.asServiceRole.entities.Voicemail.create({
       phone_number: fromPhone,
       route_id: routeId,
       route_description: routeDescription,
@@ -30,8 +35,6 @@ Deno.serve(async (req) => {
       received_at: new Date().toISOString(),
       status: 'new',
     });
-
-    console.log(`Created voicemail: ${voicemail.id}`);
 
     await base44.asServiceRole.entities.CommunicationLog.create({
       type: 'call',
