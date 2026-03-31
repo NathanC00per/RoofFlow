@@ -6,16 +6,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const formData = await req.formData();
-    const fromPhone = formData.get('From');
-    const recordingUrl = formData.get('RecordingUrl');
-    const recordingDuration = formData.get('RecordingDuration');
-    const toPhone = formData.get('To');
+    const bodyText = await req.text();
+    const params = new URLSearchParams(bodyText);
+    const fromPhone = params.get('From');
+    const recordingUrl = params.get('RecordingUrl');
+    const recordingDuration = params.get('RecordingDuration');
+    const toPhone = params.get('To');
 
     console.log(`Voicemail received from ${fromPhone}: ${recordingUrl}`);
 
+    const newReq = new Request(req.url, { method: req.method, headers: req.headers, body: bodyText });
     // Create service-role client for database writes
-    const base44 = createClientFromRequest(req);
+    const base44 = createClientFromRequest(newReq);
 
     // Get the default/first route for now (in future, this would be selected based on IVR choice)
     const routes = await base44.asServiceRole.entities.PhoneRouting.list();

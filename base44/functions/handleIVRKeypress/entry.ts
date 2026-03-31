@@ -6,28 +6,35 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const formData = await req.formData();
-    const digit = formData.get('Digits');
-    const fromPhone = formData.get('From');
-    const callSid = formData.get('CallSid');
+    // Read body as text first, then parse it manually so the stream isn't consumed
+    const bodyText = await req.text();
+    const params = new URLSearchParams(bodyText);
+    const digit = params.get('Digits');
+    const fromPhone = params.get('From');
+    const callSid = params.get('CallSid');
 
     console.log(`IVR keypress: ${digit} from ${fromPhone}`);
 
-    const base44 = createClientFromRequest(req);
+    // Create a new request with the body restored so the SDK can authenticate
+    const newReq = new Request(req.url, {
+      method: req.method,
+      headers: req.headers,
+      body: bodyText,
+    });
+
+    const base44 = createClientFromRequest(newReq);
 
     // Get IVR config and find matching option
     const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.list();
     const activeIvr = ivrConfigs.find(ivr => ivr.is_active) || ivrConfigs[0];
     
     if (!activeIvr) {
-      // Fallback to voicemail
       return voicemailResponse();
     }
 
     const selectedOption = activeIvr.menu_options.find(opt => opt.digit === digit);
 
     if (!selectedOption || !selectedOption.route_id) {
-      // Invalid selection or no route configured - go to voicemail
       return voicemailResponse();
     }
 
@@ -49,7 +56,6 @@ Deno.serve(async (req) => {
     });
 
     if (!isOpen) {
-      // Outside business hours - voicemail with closed message
       let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
       twiml += '<Say>We are currently closed. Please leave a message and we will get back to you.</Say>';
       twiml += `<Record maxLength="120" action="https://app.base44.dev/functions/handleVoicemail" />`;
@@ -57,7 +63,6 @@ Deno.serve(async (req) => {
       return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
     }
 
-    // Forward to the configured number
     if (route.forward_number) {
       let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
       twiml += `<Dial timeout="${route.ring_timeout}">${escapeXml(route.forward_number)}</Dial>`;
@@ -67,7 +72,6 @@ Deno.serve(async (req) => {
       return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
     }
 
-    // Fallback to voicemail
     return voicemailResponse();
   } catch (error) {
     console.error('Error handling IVR keypress:', error);
@@ -84,17 +88,14 @@ function voicemailResponse() {
 }
 
 function isWithinBusinessHours(businessHours) {
-  if (!businessHours) return true; // Default to open if no hours specified
+  if (!businessHours) return true;
 
   const now = new Date();
-  const dayOfWeek = now.getDay();
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const dayName = dayNames[dayOfWeek];
-
+  const dayName = dayNames[now.getDay()];
   const dayHours = businessHours[dayName];
-  if (!dayHours || !dayHours.enabled) {
-    return false;
-  }
+
+  if (!dayHours || !dayHours.enabled) return false;
 
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   return currentTime >= dayHours.start_time && currentTime <= dayHours.end_time;

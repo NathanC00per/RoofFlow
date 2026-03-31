@@ -6,15 +6,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const formData = await req.formData();
-    const fromPhone = formData.get('From');
-    const toPhone = formData.get('To');
-    const callSid = formData.get('CallSid');
+    const bodyText = await req.text();
+    const params = new URLSearchParams(bodyText);
+    const fromPhone = params.get('From');
+    const toPhone = params.get('To');
+    const callSid = params.get('CallSid');
 
     console.log(`Incoming call from ${fromPhone} to ${toPhone} (SID: ${callSid})`);
 
+    const newReq = new Request(req.url, { method: req.method, headers: req.headers, body: bodyText });
     // Get IVR config to play the greeting and menu options
-    const base44 = createClientFromRequest(req);
+    const base44 = createClientFromRequest(newReq);
     const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.list();
     const activeIvr = ivrConfigs.find(ivr => ivr.is_active) || ivrConfigs[0];
 
