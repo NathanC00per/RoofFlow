@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +9,7 @@ import { JobStatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import PageHeader from "@/components/shared/PageHeader";
 import {
   Pencil, Trash2, MapPin, Phone, Mail, Calendar, DollarSign,
-  ArrowLeft, FileText, Link2, Printer, Wrench
+  ArrowLeft, FileText, Link2, Printer, Wrench, CalendarDays
 } from "lucide-react";
 import JobsMap from "@/components/maps/JobsMap";
 import JobFinancials from "@/components/jobs/JobFinancials";
@@ -19,6 +20,7 @@ import CustomFieldsDisplay from "@/components/jobs/CustomFieldsDisplay";
 import JobScheduleCard from "@/components/jobs/JobScheduleCard";
 import JobPhotos from "@/components/jobs/JobPhotos";
 import JobPlanOfAction from "@/components/jobs/JobPlanOfAction";
+import AutoScheduleModal from "@/components/jobs/AutoScheduleModal";
 import { generateCrewSheetPDF } from "@/lib/generateCrewSheet";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -121,6 +123,8 @@ export default function JobDetail() {
     },
   });
 
+  const [showAutoSchedule, setShowAutoSchedule] = useState(false);
+
   if (isLoading || !job) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -128,7 +132,6 @@ export default function JobDetail() {
       </div>
     );
   }
-
   const jobTimesheets = timesheets.filter(t => t.job_id === jobId);
   const jobEstimates = estimates.filter(e => e.job_id === jobId);
   const fullAddress = [job.address, job.city, job.state, job.zip].filter(Boolean).join(", ");
@@ -143,6 +146,16 @@ export default function JobDetail() {
         title={job.customer_name}
         subtitle={`${JOB_TYPE_LABELS[job.job_type] || job.job_type} · Created ${format(new Date(job.created_date), "MMM d, yyyy")}`}
       >
+        {!job.start_date && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-primary border-primary/40 hover:bg-primary/5"
+            onClick={() => setShowAutoSchedule(true)}
+          >
+            <CalendarDays className="w-4 h-4 mr-2" /> Auto-Schedule
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -177,6 +190,14 @@ export default function JobDetail() {
           </AlertDialogContent>
         </AlertDialog>
       </PageHeader>
+
+      {showAutoSchedule && (
+        <AutoScheduleModal
+          open={showAutoSchedule}
+          onClose={() => setShowAutoSchedule(false)}
+          job={job}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
