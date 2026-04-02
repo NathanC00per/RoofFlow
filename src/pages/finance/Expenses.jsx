@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, Upload, Camera, Loader2, Trash2, ImageIcon, Sparkles, ExternalLink } from "lucide-react";
+import { PlusCircle, Upload, Camera, Loader2, Trash2, ImageIcon, Sparkles, ExternalLink, PackagePlus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -57,6 +57,16 @@ export default function Expenses() {
     queryFn: () => base44.entities.Job.list()
   });
 
+  const { data: materials = [] } = useQuery({
+    queryKey: ["materials"],
+    queryFn: () => base44.entities.Material.list()
+  });
+
+  // State for the "add detected materials" prompt
+  const [detectedMaterials, setDetectedMaterials] = useState([]);
+  const [addingMaterials, setAddingMaterials] = useState(false);
+  const [savingMaterials, setSavingMaterials] = useState(false);
+
   const saveMutation = useMutation({
     mutationFn: (data) => {
       const payload = { ...data, amount: parseFloat(data.amount) || 0 };
@@ -64,12 +74,63 @@ export default function Expenses() {
         ? base44.entities.Expense.update(editing.id, payload)
         : base44.entities.Expense.create(payload);
     },
-    onSuccess: () => {
+    onSuccess: async (_, data) => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       toast.success(editing ? "Expense updated!" : "Expense added!");
       handleClose();
+      // Only detect materials for materials-category expenses
+      if (data.category === "materials" && (data.description || data.notes || data.vendor)) {
+        detectNewMaterials(data);
+      }
     }
   });
+
+  async function detectNewMaterials(expense) {
+    try {
+      const text = [expense.vendor, expense.description, expense.notes].filter(Boolean).join(". ");
+      const existingNames = materials.map(m => m.name.toLowerCase());
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `From this roofing materials expense entry, extract a list of specific roofing material items that were likely purchased. Only return distinct material product names (e.g. "Ridge Cap Shingles", "Flashing Roll", "Roofing Felt"). Be concise and specific. Entry: "${text}"`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            items: { type: "array", items: { type: "string" }, description: "List of material names detected" }
+          }
+        }
+      });
+      const detected = (result?.items || []).filter(name =>
+        name && !existingNames.some(e => e.includes(name.toLowerCase()) || name.toLowerCase().includes(e))
+      );
+      if (detected.length > 0) {
+        setDetectedMaterials(detected.map(name => ({ name, unit: "each", unit_price: "", include: true })));
+        setAddingMaterials(true);
+      }
+    } catch {
+      // silently fail — this is non-critical
+    }
+  }
+
+  async function handleSaveDetectedMaterials() {
+    const toAdd = detectedMaterials.filter(m => m.include && m.name);
+    if (!toAdd.length) { setAddingMaterials(false); return; }
+    setSavingMaterials(true);
+    try {
+      await Promise.all(toAdd.map(m =>
+        base44.entities.Material.create({
+          name: m.name,
+          unit: m.unit || "each",
+          unit_price: parseFloat(m.unit_price) || 0,
+          is_active: true,
+        })
+      ));
+      queryClient.invalidateQueries({ queryKey: ["materials"] });
+      toast.success(`${toAdd.length} material${toAdd.length > 1 ? "s" : ""} added to catalogue!`);
+      setAddingMaterials(false);
+      setDetectedMaterials([]);
+    } finally {
+      setSavingMaterials(false);
+    }
+  }
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Expense.delete(id),
@@ -239,6 +300,58 @@ export default function Expenses() {
           ))}
         </div>
       )}
+
+      {/* Detected Materials Dialog */}
+      <Dialog open={addingMaterials} onOpenChange={v => { if (!v) { setAddingMaterials(false); setDetectedMaterials([]); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PackagePlus className="w-4 h-4 text-primary" /> New Materials Detected
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              These materials from the expense aren't in your catalogue yet. Would you like to add them?
+            </p>
+          </DialogHeader>
+          <div className="space-y-3">
+            {detectedMaterials.map((m, i) => (
+              <div key={i} className="flex items-center gap-3 border rounded-lg p-3">
+                <input
+                  type="checkbox"
+                  checked={m.include}
+                  onChange={e => setDetectedMaterials(prev => prev.map((x, xi) => xi === i ? { ...x, include: e.target.checked } : x))}
+                  className="w-4 h-4 accent-primary"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{m.name}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Select value={m.unit} onValueChange={v => setDetectedMaterials(prev => prev.map((x, xi) => xi === i ? { ...x, unit: v } : x))}>
+                    <SelectTrigger className="w-24 h-7 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["each","sq_ft","bundle","roll","gallon","box","sheet","linear_ft","square","bag","tube"].map(u => (
+                        <SelectItem key={u} value={u} className="text-xs">{u.replace("_"," ")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number" step="0.01" placeholder="Price"
+                    value={m.unit_price}
+                    onChange={e => setDetectedMaterials(prev => prev.map((x, xi) => xi === i ? { ...x, unit_price: e.target.value } : x))}
+                    className="w-20 h-7 text-xs"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAddingMaterials(false); setDetectedMaterials([]); }}>Skip</Button>
+            <Button onClick={handleSaveDetectedMaterials} disabled={savingMaterials || !detectedMaterials.some(m => m.include)}>
+              {savingMaterials ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PackagePlus className="w-4 h-4 mr-2" />}
+              Add to Catalogue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Dialog */}
       <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
