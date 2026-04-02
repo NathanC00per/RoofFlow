@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import PageHeader from "@/components/shared/PageHeader";
-import { PlusCircle, Phone, Mail, Search, Pencil, Trash2, User } from "lucide-react";
+import { PlusCircle, Phone, Mail, Search, Pencil, Trash2, DollarSign, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +42,7 @@ const emptyForm = {
 
 export default function Employees() {
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -89,9 +90,11 @@ export default function Employees() {
 
   const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const filtered = employees.filter(e =>
-    !search || `${e.first_name} ${e.last_name}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = employees.filter(e => {
+    const matchSearch = !search || `${e.first_name} ${e.last_name}`.toLowerCase().includes(search.toLowerCase()) || e.phone?.includes(search);
+    const matchRole = roleFilter === "all" || e.role === roleFilter;
+    return matchSearch && matchRole;
+  });
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
@@ -108,43 +111,64 @@ export default function Employees() {
         <Input placeholder="Search employees..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 max-w-sm" />
       </div>
 
+      {/* Role filter pills */}
+      <div className="flex gap-2 mb-5 flex-wrap">
+        {["all", ...ROLES.map(r => r.value)].map(r => (
+          <button
+            key={r}
+            onClick={() => setRoleFilter(r)}
+            className={cn(
+              "text-xs px-3 py-1.5 rounded-full border transition-all font-medium",
+              roleFilter === r ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:border-primary/50"
+            )}
+          >
+            {r === "all" ? "All" : ROLES.find(x => x.value === r)?.label}
+            {r !== "all" && <span className="ml-1.5 opacity-70">({employees.filter(e => e.role === r).length})</span>}
+          </button>
+        ))}
+      </div>
+
       {filtered.length === 0 ? (
-        <Card><CardContent className="text-center py-16 text-muted-foreground">No employees found</CardContent></Card>
+        <Card className="border-dashed"><CardContent className="text-center py-16 text-muted-foreground">No employees found</CardContent></Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(emp => (
-            <Card key={emp.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="w-5 h-5 text-primary" />
+          {filtered.map(emp => {
+            const initials = `${emp.first_name?.[0] || ""}${emp.last_name?.[0] || ""}`.toUpperCase();
+            return (
+              <Card key={emp.id} className="hover:shadow-md transition-shadow border-0 shadow-sm bg-card">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-bold text-primary">{initials}</span>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{emp.first_name} {emp.last_name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{emp.role?.replace("_", " ")}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-sm">{emp.first_name} {emp.last_name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{emp.role}</p>
-                    </div>
+                    <Badge variant="secondary" className={cn("text-xs", statusColors[emp.status])}>
+                      {emp.status === "on_leave" ? "On Leave" : emp.status?.charAt(0).toUpperCase() + emp.status?.slice(1)}
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className={cn("text-xs", statusColors[emp.status])}>
-                    {emp.status === "on_leave" ? "On Leave" : emp.status?.charAt(0).toUpperCase() + emp.status?.slice(1)}
-                  </Badge>
-                </div>
-                <div className="space-y-1.5 text-xs text-muted-foreground mb-3">
-                  {emp.phone && <p className="flex items-center gap-1.5"><Phone className="w-3 h-3" />{emp.phone}</p>}
-                  {emp.email && <p className="flex items-center gap-1.5"><Mail className="w-3 h-3" />{emp.email}</p>}
-                  {emp.hourly_rate && <p className="font-medium text-foreground">${emp.hourly_rate}/hr</p>}
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(emp)}>
-                    <Pencil className="w-3 h-3 mr-1" /> Edit
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => deleteMutation.mutate(emp.id)}>
-                    <Trash2 className="w-3 h-3 text-destructive" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="space-y-1.5 text-xs text-muted-foreground mb-4">
+                    {emp.phone && <p className="flex items-center gap-1.5"><Phone className="w-3 h-3" /><a href={`tel:${emp.phone}`} className="hover:text-primary transition-colors">{emp.phone}</a></p>}
+                    {emp.email && <p className="flex items-center gap-1.5"><Mail className="w-3 h-3" /><span className="truncate">{emp.email}</span></p>}
+                    {emp.hourly_rate && <p className="flex items-center gap-1.5 font-medium text-foreground"><DollarSign className="w-3 h-3" />€{emp.hourly_rate}/hr</p>}
+                    {emp.start_date && <p className="flex items-center gap-1.5"><Calendar className="w-3 h-3" />Since {emp.start_date}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(emp)}>
+                      <Pencil className="w-3 h-3 mr-1" /> Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => deleteMutation.mutate(emp.id)}>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

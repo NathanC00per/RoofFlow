@@ -1,12 +1,40 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Search, LogOut, Settings, User, ChevronDown, Shield, Briefcase, FileText, Receipt, UserCircle } from "lucide-react";
+import { Search, LogOut, Settings, ChevronDown, Shield, Briefcase, FileText, Receipt, UserCircle } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { cn } from "@/lib/utils";
+
+const PAGE_TITLES = {
+  "/": "Dashboard",
+  "/jobs": "All Jobs",
+  "/jobs/new": "New Job",
+  "/job-dashboard": "Job Board",
+  "/employees": "Employees",
+  "/timesheets": "Timesheets",
+  "/clock-in": "Clock In",
+  "/schedule": "Schedule",
+  "/materials": "Materials",
+  "/estimates": "Estimates",
+  "/invoices": "Invoices",
+  "/finance": "Finance Dashboard",
+  "/customers": "Customers",
+  "/expenses": "Expenses",
+  "/maintenance": "Maintenance",
+  "/communications": "Communications",
+  "/voicemails": "Voicemails",
+  "/broadcast": "Broadcast",
+  "/forum": "Team Forum",
+  "/notifications": "Notifications",
+  "/settings/company": "Company Settings",
+  "/settings/phone": "Phone Settings",
+  "/settings/roles": "Roles & Permissions",
+  "/settings/templates": "Document Templates",
+  "/settings/vat": "VAT Tracker",
+};
 
 const SEARCH_SCOPES = [
   { key: "jobs", label: "Jobs", icon: Briefcase, path: (r) => `/jobs/${r.id}`, display: (r) => `${r.customer_name} — ${r.address || ""}` },
@@ -196,19 +224,36 @@ function QuickActions() {
 }
 
 export default function TopBar() {
+  const location = useLocation();
+  const pageTitle = (() => {
+    // Exact match first
+    if (PAGE_TITLES[location.pathname]) return PAGE_TITLES[location.pathname];
+    // Prefix match for dynamic routes
+    if (location.pathname.startsWith("/jobs/")) return "Job Details";
+    if (location.pathname.startsWith("/estimates/")) return "Estimate";
+    if (location.pathname.startsWith("/invoices/")) return "Invoice";
+    if (location.pathname.startsWith("/customers/")) return "Customer Details";
+    if (location.pathname.startsWith("/maintenance/")) return "Maintenance Contract";
+    return "";
+  })();
+
   return (
-    <header className="h-14 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40 flex items-center px-6 gap-4">
+    <header className="h-14 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40 flex items-center px-5 gap-4">
       <QuickActions />
-      <div className="flex-1 max-w-xl">
+      {pageTitle && (
+        <h2 className="text-sm font-semibold text-foreground hidden md:block whitespace-nowrap">{pageTitle}</h2>
+      )}
+      {pageTitle && <div className="hidden md:block w-px h-4 bg-border" />}
+      <div className="flex-1 max-w-lg">
         <GlobalSearch />
       </div>
-      <div className="ml-auto flex items-center gap-3">
-        <div className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-2.5 py-1.5 rounded-lg border">
-          <kbd className="font-mono">⌘K</kbd>
-          <span>search</span>
-          <span className="mx-1 text-muted-foreground/40">·</span>
-          <kbd className="font-mono">⌘J</kbd>
-          <span>new job</span>
+      <div className="ml-auto flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2 py-1.5 rounded-lg border">
+          <kbd className="font-mono text-[10px]">⌘K</kbd>
+          <span className="text-[10px]">search</span>
+          <span className="mx-0.5 text-muted-foreground/40">·</span>
+          <kbd className="font-mono text-[10px]">⌘J</kbd>
+          <span className="text-[10px]">new job</span>
         </div>
         <NotificationBell />
         <UserMenu />

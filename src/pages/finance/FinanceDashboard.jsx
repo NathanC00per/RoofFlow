@@ -33,17 +33,17 @@ const ESTIMATE_STATUS_STYLES = {
   expired: "bg-amber-100 text-amber-700",
 };
 
-function StatCard({ title, value, sub, icon: IconComp, color = "text-primary" }) {
+function StatCard({ title, value, sub, icon: IconComp, color = "text-primary", bgColor = "bg-muted" }) {
   return (
-    <Card>
+    <Card className="border-0 shadow-sm">
       <CardContent className="p-5 flex items-start justify-between">
         <div>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{title}</p>
-          <p className={cn("text-2xl font-bold mt-1", color)}>{value}</p>
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">{title}</p>
+          <p className={cn("text-2xl font-bold mt-1.5", color)}>{value}</p>
           {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
         </div>
-        <div className={cn("p-2.5 rounded-xl bg-muted", color)}>
-          <IconComp className="w-5 h-5" />
+        <div className={cn("p-2.5 rounded-xl", bgColor)}>
+          <IconComp className={cn("w-5 h-5", color)} />
         </div>
       </CardContent>
     </Card>
@@ -124,22 +124,24 @@ export default function FinanceDashboard() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard title="Total Revenue" value={`$${totalRevenue.toLocaleString()}`} sub="Paid invoices" icon={DollarSign} color="text-emerald-600" />
-        <StatCard title="Outstanding" value={`$${outstanding.toLocaleString()}`} sub={`${invoices.filter(i => !["paid","void"].includes(i.status)).length} invoices`} icon={Wallet} color="text-amber-600" />
-        <StatCard title="Total Expenses" value={`$${totalExpenses.toLocaleString()}`} sub={`${expenses.length} records`} icon={TrendingDown} color="text-red-500" />
-        <StatCard title="Net Profit" value={`$${profit.toLocaleString()}`} sub="Revenue − Expenses" icon={TrendingUp} color={profit >= 0 ? "text-emerald-600" : "text-red-500"} />
+        <StatCard title="Total Revenue" value={`€${totalRevenue.toLocaleString()}`} sub="Paid invoices" icon={DollarSign} color="text-emerald-600" bgColor="bg-emerald-50" />
+        <StatCard title="Outstanding" value={`€${outstanding.toLocaleString()}`} sub={`${invoices.filter(i => !["paid","void"].includes(i.status)).length} invoices`} icon={Wallet} color="text-amber-600" bgColor="bg-amber-50" />
+        <StatCard title="Total Expenses" value={`€${totalExpenses.toLocaleString()}`} sub={`${expenses.length} records`} icon={TrendingDown} color="text-red-500" bgColor="bg-red-50" />
+        <StatCard title="Net Profit" value={`€${profit.toLocaleString()}`} sub="Revenue − Expenses" icon={TrendingUp} color={profit >= 0 ? "text-emerald-600" : "text-red-500"} bgColor={profit >= 0 ? "bg-emerald-50" : "bg-red-50"} />
       </div>
 
       {/* Chart */}
-      <Card className="mb-8">
-        <CardHeader><CardTitle className="text-base">Revenue vs Expenses — Last 6 Months</CardTitle></CardHeader>
+      <Card className="mb-8 border-0 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold">Revenue vs Expenses — Last 6 Months</CardTitle>
+        </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={chartData} barCategoryGap="30%">
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `$${v >= 1000 ? (v/1000).toFixed(0)+"k" : v}`} />
-              <Tooltip formatter={(v) => `$${v.toLocaleString()}`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `€${v >= 1000 ? (v/1000).toFixed(0)+"k" : v}`} axisLine={false} tickLine={false} />
+              <Tooltip formatter={(v) => `€${v.toLocaleString()}`} contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))" }} />
               <Legend />
               <Bar dataKey="Revenue" fill="hsl(var(--chart-3))" radius={[4,4,0,0]} />
               <Bar dataKey="Expenses" fill="hsl(var(--chart-5))" radius={[4,4,0,0]} />
@@ -165,7 +167,7 @@ export default function FinanceDashboard() {
                 <div key={est.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/40 transition">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{est.estimate_number || "Estimate"}</p>
-                    <p className="text-xs text-muted-foreground">{job?.customer_name || "—"} • ${(est.total || 0).toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">{job?.customer_name || "—"} • €{(est.total || 0).toLocaleString()}</p>
                   </div>
                   <Button
                     size="sm"
@@ -204,7 +206,7 @@ export default function FinanceDashboard() {
                       <p className="text-xs text-muted-foreground">{job?.customer_name} • Due {inv.due_date ? format(new Date(inv.due_date), "MMM d") : "—"}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-red-600">${(inv.balance_due || inv.total || 0).toLocaleString()}</span>
+                      <span className="text-sm font-bold text-red-600">€{(inv.balance_due || inv.total || 0).toLocaleString()}</span>
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </div>
@@ -239,7 +241,7 @@ export default function FinanceDashboard() {
                     <Badge variant="secondary" className={cn("text-xs", INVOICE_STATUS_STYLES[statusKey])}>
                       {statusKey.charAt(0).toUpperCase() + statusKey.slice(1)}
                     </Badge>
-                    <span className="text-sm font-semibold">${(inv.total || 0).toLocaleString()}</span>
+                    <span className="text-sm font-semibold">€{(inv.total || 0).toLocaleString()}</span>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>

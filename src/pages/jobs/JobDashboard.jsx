@@ -40,8 +40,8 @@ function JobCard({ job, estimates, invoices }) {
   return (
     <Link to={`/jobs/${job.id}`}>
       <div className={cn(
-        "bg-white rounded-xl border p-4 hover:shadow-md transition-all cursor-pointer group space-y-3",
-        isOverdue && "border-red-200 bg-red-50/30"
+        "bg-card rounded-xl border-0 shadow-sm p-4 hover:shadow-md transition-all cursor-pointer group space-y-3",
+        isOverdue && "ring-1 ring-red-200 bg-red-50/30"
       )}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -98,23 +98,23 @@ function KanbanView({ jobs, estimates, invoices }) {
   const activeStages = STAGES.filter(s => s.key !== "completed");
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="flex gap-3 overflow-x-auto pb-4">
       {activeStages.map(stage => {
         const stageJobs = jobs.filter(j => j.status === stage.key);
         return (
-          <div key={stage.key} className="flex-shrink-0 w-64">
-            <div className="flex items-center gap-2 mb-3">
-              <div className={cn("w-2 h-2 rounded-full", stage.dot)} />
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{stage.label}</p>
-              <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded-full font-medium">{stageJobs.length}</span>
+          <div key={stage.key} className="flex-shrink-0 w-60">
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <div className={cn("w-2 h-2 rounded-full flex-shrink-0", stage.dot)} />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide truncate">{stage.label}</p>
+              <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">{stageJobs.length}</span>
             </div>
-            <div className="space-y-3 min-h-[80px]">
+            <div className="space-y-2 min-h-[80px] bg-muted/40 rounded-xl p-2">
               {stageJobs.map(job => (
                 <JobCard key={job.id} job={job} estimates={estimates} invoices={invoices} />
               ))}
               {stageJobs.length === 0 && (
-                <div className="border-2 border-dashed rounded-xl h-16 flex items-center justify-center">
-                  <p className="text-xs text-muted-foreground/50">Empty</p>
+                <div className="border-2 border-dashed rounded-lg h-14 flex items-center justify-center">
+                  <p className="text-xs text-muted-foreground/40">Empty</p>
                 </div>
               )}
             </div>

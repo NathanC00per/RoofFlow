@@ -27,7 +27,8 @@ import {
   Shield,
   Globe,
   Megaphone,
-  Phone
+  Phone,
+  PhoneCall
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -43,7 +44,7 @@ const ALL_NAV_GROUPS = [
       { label: "New Job",     path: "/jobs/new",      icon: PlusCircle,      perm: "jobs.create" },
       { label: "All Jobs",    path: "/jobs",           icon: Briefcase,       perm: "jobs.view" },
       { label: "Maintenance", path: "/maintenance",    icon: Wrench,          perm: "maintenance.view" },
-      { label: "Communications", path: "/communications", icon: Phone,       perm: null },
+      { label: "Communications", path: "/communications", icon: PhoneCall,    perm: null },
     ]
   },
   {
@@ -120,11 +121,11 @@ export default function Sidebar() {
   return (
     <aside className={cn(
       "h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 sticky top-0 select-none",
-      collapsed ? "w-[72px]" : "w-72"
+      collapsed ? "w-[68px]" : "w-64"
     )}>
       {/* Logo */}
-      <div className="p-4 flex items-center gap-3 border-b border-sidebar-border min-h-[64px]">
-        <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0 overflow-hidden">
+      <div className={cn("flex items-center gap-3 border-b border-sidebar-border min-h-[60px]", collapsed ? "p-3 justify-center" : "px-4 py-3")}>
+        <div className="w-9 h-9 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
           {logoUrl
             ? <img src={logoUrl} alt="" className="w-full h-full object-contain p-0.5" />
             : <HardHat className="w-5 h-5 text-sidebar-primary-foreground" />
@@ -132,20 +133,20 @@ export default function Sidebar() {
         </div>
         {!collapsed && (
           <div className="overflow-hidden">
-            <h1 className="font-bold text-base text-white tracking-tight truncate">{companyName}</h1>
-            <p className="text-[11px] text-sidebar-foreground/50 truncate">Management System</p>
+            <h1 className="font-bold text-sm text-white tracking-tight truncate leading-tight">{companyName}</h1>
+            <p className="text-[10px] text-sidebar-foreground/40 truncate mt-0.5">Management System</p>
           </div>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-5 overflow-y-auto scrollbar-thin">
+      <nav className="flex-1 p-2 space-y-4 overflow-y-auto">
         {navGroups.map((group) => (
           <div key={group.label}>
             {!collapsed && (
-              <p className="text-[10px] uppercase tracking-widest text-sidebar-foreground/35 font-bold px-3 mb-1.5">{group.label}</p>
+              <p className="text-[9px] uppercase tracking-widest text-sidebar-foreground/30 font-bold px-2.5 mb-1">{group.label}</p>
             )}
-            {collapsed && <div className="h-px bg-sidebar-border mx-2 mb-2" />}
+            {collapsed && <div className="h-px bg-sidebar-border/50 mx-2 mb-2" />}
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const isActive = location.pathname === item.path ||
@@ -156,22 +157,22 @@ export default function Sidebar() {
                     to={item.path}
                     title={collapsed ? item.label : undefined}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg text-sm font-medium transition-all group",
-                      collapsed ? "px-2.5 py-2.5 justify-center" : "px-3 py-2",
+                      "flex items-center gap-2.5 rounded-lg text-sm font-medium transition-all group relative",
+                      collapsed ? "px-2 py-2.5 justify-center" : "px-2.5 py-2",
                       isActive
-                        ? "bg-sidebar-accent text-white shadow-sm"
-                        : "text-sidebar-foreground/65 hover:text-white hover:bg-sidebar-accent/50"
+                        ? "bg-white/10 text-white"
+                        : "text-sidebar-foreground/55 hover:text-white hover:bg-white/5"
                     )}
                   >
+                    {isActive && !collapsed && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-sidebar-primary rounded-r-full" />
+                    )}
                     <item.icon className={cn(
                       "flex-shrink-0 transition-colors",
-                      collapsed ? "w-5 h-5" : "w-4 h-4",
-                      isActive ? "text-sidebar-primary" : "group-hover:text-sidebar-primary"
+                      collapsed ? "w-[18px] h-[18px]" : "w-4 h-4",
+                      isActive ? "text-sidebar-primary" : "group-hover:text-sidebar-primary/80"
                     )} />
                     {!collapsed && <span className="truncate">{item.label}</span>}
-                    {!collapsed && isActive && (
-                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary flex-shrink-0" />
-                    )}
                   </Link>
                 );
               })}
@@ -183,7 +184,7 @@ export default function Sidebar() {
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="p-4 border-t border-sidebar-border hover:bg-sidebar-accent/50 transition-colors flex items-center justify-center"
+        className="p-3 border-t border-sidebar-border/50 hover:bg-white/5 transition-colors flex items-center justify-center text-sidebar-foreground/40 hover:text-sidebar-foreground/70"
       >
         {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
       </button>

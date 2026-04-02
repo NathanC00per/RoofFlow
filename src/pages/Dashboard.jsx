@@ -38,15 +38,15 @@ const ROLE_GREETINGS = {
 
 function StatCard({ title, value, icon: Icon, subtitle, color, bgColor, to }) {
   const content = (
-    <Card className={`relative overflow-hidden transition-all duration-200 ${to ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5" : ""}`}>
+    <Card className={`relative overflow-hidden transition-all duration-200 border-0 shadow-sm ${to ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5" : ""}`}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
             <p className="text-3xl font-bold mt-1.5 tracking-tight">{value}</p>
-            {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-muted-foreground mt-1.5">{subtitle}</p>}
           </div>
-          <div className={`p-3 rounded-xl flex-shrink-0 ${bgColor}`}>
+          <div className={`p-2.5 rounded-xl flex-shrink-0 ${bgColor}`}>
             <Icon className={`w-5 h-5 ${color}`} />
           </div>
         </div>
@@ -213,14 +213,16 @@ export default function Dashboard() {
             {greeting} — {format(new Date(), "EEEE, MMMM d, yyyy")}
           </p>
         </div>
-        {(isAdmin || can("jobs.create")) && (
-          <Link to="/jobs/new">
-            <Button className="gap-2">
-              <Briefcase className="w-4 h-4" />
-              New Job
-            </Button>
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {(isAdmin || can("jobs.create")) && (
+            <Link to="/jobs/new">
+              <Button className="gap-2 shadow-sm">
+                <Briefcase className="w-4 h-4" />
+                New Job
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* MAP */}

@@ -162,6 +162,7 @@ export default function Schedule() {
   const canView = isAdmin || can("schedule.view");
   const canEdit = isAdmin || can("schedule.edit");
 
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedDay, setSelectedDay] = useState(new Date());
   const [modalOpen, setModalOpen] = useState(false);
@@ -172,6 +173,12 @@ export default function Schedule() {
   const [draggingJob, setDraggingJob] = useState(null);
   const [pendingJob, setPendingJob] = useState(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -586,14 +593,6 @@ export default function Schedule() {
       </Card>
     </div>
   );
-
-  // Detect mobile (< lg breakpoint)
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
 
   if (isMobile) {
     return (

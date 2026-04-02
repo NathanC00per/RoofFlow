@@ -146,55 +146,61 @@ export default function CustomersList() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map(c => (
-          <Card key={c.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-base">{c.first_name} {c.last_name}</p>
-                    <Badge variant="outline" className={cn("text-xs", c.status === "active" ? "text-emerald-600 border-emerald-200" : "text-slate-400")}>
-                      {c.status}
-                    </Badge>
+        {filtered.map(c => {
+          const count = jobCountFor(c);
+          const initials = `${c.first_name?.[0] || ""}${c.last_name?.[0] || ""}`.toUpperCase();
+          return (
+            <Link key={c.id} to={`/customers/${c.id}`}>
+              <Card className="hover:shadow-md transition-all hover:border-primary/30 cursor-pointer border-0 shadow-sm bg-card group">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-bold text-primary">{initials}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-sm group-hover:text-primary transition-colors">{c.first_name} {c.last_name}</p>
+                          <Badge variant="outline" className={cn("text-xs", c.status === "active" ? "text-emerald-600 border-emerald-200 bg-emerald-50" : "text-slate-400")}>
+                            {c.status}
+                          </Badge>
+                        </div>
+                        <div className="mt-1.5 space-y-0.5">
+                          {c.email && <p className="text-xs text-muted-foreground flex items-center gap-1.5 truncate"><Mail className="w-3 h-3 flex-shrink-0" />{c.email}</p>}
+                          {c.phone && <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3 flex-shrink-0" />{c.phone}</p>}
+                          {c.city && <p className="text-xs text-muted-foreground flex items-center gap-1.5"><MapPin className="w-3 h-3 flex-shrink-0" />{c.city}{c.state ? `, ${c.state}` : ""}</p>}
+                        </div>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={e => e.preventDefault()}>
+                        <Button variant="ghost" size="icon" className="w-8 h-8 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"><MoreVertical className="w-4 h-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => { e.preventDefault(); openEdit(c); }}><Edit className="w-4 h-4 mr-2" />Edit</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={(e) => { e.preventDefault(); deleteMutation.mutate(c.id); }}>
+                          <Trash2 className="w-4 h-4 mr-2" />Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <div className="mt-2 space-y-1">
-                    {c.email && <p className="text-sm text-muted-foreground flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" />{c.email}</p>}
-                    {c.phone && <p className="text-sm text-muted-foreground flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" />{c.phone}</p>}
-                    {c.city && <p className="text-sm text-muted-foreground flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{c.city}{c.state ? `, ${c.state}` : ""}</p>}
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="w-8 h-8 flex-shrink-0"><MoreVertical className="w-4 h-4" /></Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEdit(c)}><Edit className="w-4 h-4 mr-2" />Edit</DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to={`/customers/${c.id}`}><Eye className="w-4 h-4 mr-2" />View Details</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(c.id)}>
-                      <Trash2 className="w-4 h-4 mr-2" />Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
 
-              <div className="mt-4 pt-4 border-t flex items-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" />{jobCountFor(c)} job{jobCountFor(c) !== 1 ? "s" : ""}</span>
-                <div className="flex items-center gap-1 ml-auto">
-                  {c.portal_enabled ? (
-                    <span className="flex items-center gap-1 text-emerald-600"><ShieldCheck className="w-3.5 h-3.5" />Portal active</span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-slate-400"><Shield className="w-3.5 h-3.5" />No portal</span>
-                  )}
-                </div>
-                {c.gdpr_consent && (
-                  <span className="text-emerald-600 text-xs">GDPR ✓</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  <div className="mt-3 pt-3 border-t flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" />{count} job{count !== 1 ? "s" : ""}</span>
+                    <div className="ml-auto flex items-center gap-2">
+                      {c.portal_enabled ? (
+                        <span className="flex items-center gap-1 text-emerald-600 font-medium"><ShieldCheck className="w-3 h-3" />Portal on</span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-slate-400"><Shield className="w-3 h-3" />No portal</span>
+                      )}
+                      {c.gdpr_consent && <span className="text-emerald-600 font-medium">GDPR ✓</span>}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Create / Edit Dialog */}
