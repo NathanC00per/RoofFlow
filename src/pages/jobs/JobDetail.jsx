@@ -236,6 +236,18 @@ export default function JobDetail() {
                   </p>
                 </div>
               )}
+              {job.duration_days && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Est. Duration</p>
+                  <p className="text-sm font-medium">{job.duration_days} working day{job.duration_days !== 1 ? "s" : ""}</p>
+                </div>
+              )}
+              {job.crew_required && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Crew Required</p>
+                  <p className="text-sm font-medium">{job.crew_required} {job.crew_required !== 1 ? "men" : "man"}</p>
+                </div>
+              )}
               {job.assigned_employees?.length > 0 && (
                 <div className="col-span-2">
                   <p className="text-xs text-muted-foreground mb-1">Assigned Employees</p>

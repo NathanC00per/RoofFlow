@@ -25,8 +25,8 @@ function getWorkingDays(startDate, count) {
 export default function AutoScheduleModal({ open, onClose, job }) {
   const queryClient = useQueryClient();
   const [startDate, setStartDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
-  const [durationDays, setDurationDays] = useState(1);
-  const [crewRequired, setCrewRequired] = useState(2);
+  const [durationDays, setDurationDays] = useState(() => job?.duration_days || 1);
+  const [crewRequired, setCrewRequired] = useState(() => job?.crew_required || 2);
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("17:00");
   const [selectedEmployees, setSelectedEmployees] = useState([]);

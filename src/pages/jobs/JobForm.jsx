@@ -106,6 +106,8 @@ export default function JobForm({ existingJob }) {
     plan_access_notes: "",
     plan_health_safety: "",
     plan_timeline: "",
+    duration_days: "",
+    crew_required: "",
     // line items
     line_items: [],
     discount_amount: 0,
@@ -291,6 +293,14 @@ export default function JobForm({ existingJob }) {
             <div className="space-y-2">
               <Label>End Date</Label>
               <Input type="date" value={form.end_date} onChange={e => update("end_date", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Estimated Duration (working days)</Label>
+              <Input type="number" min="1" value={form.duration_days} onChange={e => update("duration_days", e.target.value ? Number(e.target.value) : "")} placeholder="e.g. 3" />
+            </div>
+            <div className="space-y-2">
+              <Label>Crew Required (no. of men)</Label>
+              <Input type="number" min="1" value={form.crew_required} onChange={e => update("crew_required", e.target.value ? Number(e.target.value) : "")} placeholder="e.g. 4" />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Description / Notes</Label>

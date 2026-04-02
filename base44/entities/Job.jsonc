@@ -98,6 +98,14 @@
       "type": "string",
       "format": "date"
     },
+    "duration_days": {
+      "type": "number",
+      "description": "Estimated number of working days to complete the job"
+    },
+    "crew_required": {
+      "type": "number",
+      "description": "Number of crew members required for this job"
+    },
     "assigned_employees": {
       "type": "array",
       "items": {
