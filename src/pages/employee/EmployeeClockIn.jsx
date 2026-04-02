@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import PageHeader from "@/components/shared/PageHeader";
 import { MapContainer, TileLayer, CircleMarker, Circle, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, Clock, CheckCircle2, AlertTriangle, Loader2, Navigation } from "lucide-react";
+import { MapPin, Clock, CheckCircle2, AlertTriangle, Loader2, Navigation, Layers, Users, CalendarDays, Wrench } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { TimesheetStatusBadge } from "@/components/shared/StatusBadge";
@@ -214,6 +214,72 @@ export default function EmployeeClockIn() {
 
             {selectedJob && (
               <>
+                {/* Job info summary */}
+                <div className="bg-muted/40 rounded-xl p-4 space-y-3 text-sm">
+                  <div className="grid grid-cols-2 gap-3">
+                    {selectedJob.job_type && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-0.5">Job Type</p>
+                        <p className="font-medium capitalize">{selectedJob.job_type.replace(/_/g, " ")}</p>
+                      </div>
+                    )}
+                    {selectedJob.roof_type && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-0.5">Roof Type</p>
+                        <p className="font-medium capitalize">{selectedJob.roof_type.replace(/_/g, " ")}</p>
+                      </div>
+                    )}
+                    {selectedJob.duration_days && (
+                      <div className="flex items-start gap-1.5">
+                        <CalendarDays className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Duration</p>
+                          <p className="font-medium">{selectedJob.duration_days} day{selectedJob.duration_days > 1 ? "s" : ""}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedJob.crew_required && (
+                      <div className="flex items-start gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Crew Required</p>
+                          <p className="font-medium">{selectedJob.crew_required} person{selectedJob.crew_required > 1 ? "s" : ""}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {selectedJob.description && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-0.5">Description</p>
+                      <p className="text-sm whitespace-pre-wrap">{selectedJob.description}</p>
+                    </div>
+                  )}
+                  {selectedJob.roof_areas?.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                        <Layers className="w-3 h-3" /> Roof Areas ({selectedJob.roof_areas.length})
+                      </p>
+                      <div className="space-y-1.5">
+                        {selectedJob.roof_areas.map((area, i) => (
+                          <div key={area.id || i} className="flex items-center gap-2 text-xs bg-background rounded-lg px-3 py-2 border">
+                            <span className="font-semibold text-muted-foreground">#{i + 1}</span>
+                            <span className="font-medium">{area.name || "Unnamed Area"}</span>
+                            {area.area_sq_ft && <span className="text-muted-foreground">{Number(area.area_sq_ft).toLocaleString()} sq ft</span>}
+                            {area.condition && <span className="capitalize text-muted-foreground">· {area.condition}</span>}
+                            {area.roof_type && <span className="text-muted-foreground capitalize">· {area.roof_type.replace(/_/g, " ")}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedJob.plan_of_action && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-0.5 flex items-center gap-1"><Wrench className="w-3 h-3" /> Plan of Action</p>
+                      <p className="text-sm whitespace-pre-wrap">{selectedJob.plan_of_action}</p>
+                    </div>
+                  )}
+                </div>
+
                 {geocoding ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" /> Locating job site…
