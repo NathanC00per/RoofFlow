@@ -18,6 +18,7 @@ import { Save, Loader2, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
 import JobPhotos from "@/components/jobs/JobPhotos";
 import JobPlanOfAction from "@/components/jobs/JobPlanOfAction";
+import RoofAreasEditor from "@/components/jobs/RoofAreasEditor";
 
 const JOB_TYPES = [
   { value: "new_roof", label: "New Roof" },
@@ -94,6 +95,8 @@ export default function JobForm({ existingJob }) {
     roof_area_sq_ft: "",
     damage_types: [],
     layers_count: "",
+    // roof areas
+    roof_areas: [],
     // photo categories
     photos_access: [],
     photos_overall: [],
@@ -408,6 +411,12 @@ export default function JobForm({ existingJob }) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Roof Areas */}
+        <RoofAreasEditor
+          value={form.roof_areas || []}
+          onChange={v => update("roof_areas", v)}
+        />
 
         {/* Plan of Action */}
         <JobPlanOfAction

@@ -21,6 +21,7 @@ import JobScheduleCard from "@/components/jobs/JobScheduleCard";
 import JobPhotos from "@/components/jobs/JobPhotos";
 import JobPlanOfAction from "@/components/jobs/JobPlanOfAction";
 import AutoScheduleModal from "@/components/jobs/AutoScheduleModal";
+import RoofAreasDisplay from "@/components/jobs/RoofAreasDisplay";
 import { generateCrewSheetPDF } from "@/lib/generateCrewSheet";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -272,6 +273,9 @@ export default function JobDetail() {
 
           {/* Roof assessment */}
           <JobRoofAssessment job={job} />
+
+          {/* Roof areas */}
+          <RoofAreasDisplay job={job} />
 
           {/* Plan of Action */}
           <JobPlanOfAction value={job} onChange={() => {}} readOnly />

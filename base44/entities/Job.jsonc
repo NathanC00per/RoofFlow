@@ -154,6 +154,40 @@
       },
       "description": "Exterior / facade photos"
     },
+    "roof_areas": {
+      "type": "array",
+      "description": "Individual roof areas/sections with their own details and photos",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Area name e.g. Front Slope, Rear Extension, Flat Roof"
+          },
+          "area_sq_ft": {
+            "type": "number"
+          },
+          "roof_type": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
     "plan_of_action": {
       "type": "string",
       "description": "Detailed plan of action and scope of works"
