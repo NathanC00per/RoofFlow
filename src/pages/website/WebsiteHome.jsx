@@ -14,15 +14,15 @@ export default function WebsiteHome() {
 
   const primary = co.primaryColor || "#1e3a5f";
   const accent  = co.accentColor  || "#e8730a";
-  const name    = co.companyName  || "RoofPro";
+  const name    = co.companyName  || "DC&S Roofing";
 
   const services = [
-    { title: "New Roof Installation", desc: "Full installation of asphalt shingle, metal, tile, flat and more.", icon: "🏠" },
-    { title: "Roof Repair", desc: "Fast, guaranteed repairs for leaks, storm damage and worn sections.", icon: "🔧" },
-    { title: "Roof Inspection", desc: "Detailed assessments with written condition reports.", icon: "🔍" },
-    { title: "Gutters & Drainage", desc: "Supply, fit and clean gutter systems for any property.", icon: "💧" },
-    { title: "Siding & Fascia", desc: "External wall cladding and fascia board replacement.", icon: "🏗️" },
-    { title: "Maintenance Contracts", desc: "Scheduled servicing to keep your roof in peak condition.", icon: "📋" },
+    { title: "New Roof Installations", desc: "Full installation including Torch on Felt, PVC systems (Alkorplan, ArmourPlan, Trocal), Slate & Tile, and Resitrix / Rubber Based Systems.", icon: "🏠" },
+    { title: "Roof Repairs", desc: "One-off and maintenance repairs on all roof systems. Fast response, guaranteed workmanship.", icon: "🔧" },
+    { title: "Roof Inspections & Quotations", desc: "Free of charge roof inspections with detailed condition reports and honest quotations.", icon: "🔍" },
+    { title: "PVC Roof Systems", desc: "Specialists in Alkorplan, ArmourPlan and Trocal PVC-based flat roof systems for commercial and domestic properties.", icon: "🏗️" },
+    { title: "Resitrix / Rubber Roofing", desc: "Installation and repair of Resitrix and other rubber-based flat roof systems.", icon: "💧" },
+    { title: "Maintenance Contracts", desc: "Scheduled maintenance and servicing contracts to keep your roof in peak condition year-round.", icon: "📋" },
   ];
 
   const testimonials = [
@@ -49,8 +49,11 @@ export default function WebsiteHome() {
         <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
           {co.logoUrl && <img src={co.logoUrl} alt={name} className="h-20 mx-auto mb-6 object-contain" />}
           <h1 className="text-5xl sm:text-6xl font-extrabold mb-4 leading-tight">{name}</h1>
-          <p className="text-xl sm:text-2xl text-white/80 mb-8 max-w-2xl mx-auto">
-            Professional roofing services you can trust. Quality workmanship, competitive pricing, guaranteed results.
+          <p className="text-xl sm:text-2xl text-white/80 mb-2 max-w-2xl mx-auto">
+            High Quality, Affordable New Roofs & Repairs
+          </p>
+          <p className="text-lg text-white/65 mb-8 max-w-2xl mx-auto">
+            Father & son business with 20+ years experience. Operating across Dublin and beyond.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link to="/website/contact">
@@ -71,10 +74,10 @@ export default function WebsiteHome() {
       <div className="bg-white border-b py-6">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
-            { icon: Shield, label: "Fully Insured" },
-            { icon: CheckCircle2, label: "Quality Guaranteed" },
-            { icon: Clock, label: "Fast Response" },
-            { icon: Star, label: "5-Star Rated" },
+            { icon: Shield, label: "20+ Years Experience" },
+            { icon: CheckCircle2, label: "Material Guarantees" },
+            { icon: Clock, label: "Fast Service" },
+            { icon: Star, label: "No Hidden Charges" },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="flex flex-col items-center gap-2">
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: `${accent}20` }}>
@@ -91,7 +94,7 @@ export default function WebsiteHome() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-slate-800 mb-3">Our Services</h2>
-            <p className="text-slate-500 text-lg">Comprehensive roofing solutions for residential and commercial properties</p>
+            <p className="text-slate-500 text-lg">Comprehensive roofing solutions for residential and commercial properties across Dublin and Ireland</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map(s => (
@@ -108,6 +111,41 @@ export default function WebsiteHome() {
                 View All Services <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* About */}
+      <section className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div>
+            <img
+              src="https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?w=800&q=80"
+              alt="Roofing work"
+              className="rounded-2xl shadow-lg w-full h-80 object-cover"
+            />
+          </div>
+          <div>
+            <h2 className="text-4xl font-bold text-slate-800 mb-4">About DC&S Roofing</h2>
+            <p className="text-slate-600 text-base mb-4">
+              We are a small, father and son owned business with several employees, providing roofing services specialising in all fields. We have over 20+ years of experience and offer great prices as well as high quality outcomes.
+            </p>
+            <p className="text-slate-600 text-base mb-6">
+              We operate out of Dublin, Ireland but also work outside of Dublin. Our previous clients include Crown Roofing in works for Amazon in the UK.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Years Experience", value: "20+" },
+                { label: "Projects Completed", value: "100+" },
+                { label: "Material Guarantee", value: "20+ yrs" },
+                { label: "Free Inspections", value: "Always" },
+              ].map(({ label, value }) => (
+                <div key={label} className="text-center p-4 rounded-xl bg-slate-50 border">
+                  <p className="text-2xl font-bold" style={{ color: accent }}>{value}</p>
+                  <p className="text-xs text-slate-500 mt-1">{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -136,11 +174,21 @@ export default function WebsiteHome() {
         </div>
       </section>
 
+      {/* Mission */}
+      <section className="py-16 bg-slate-50 border-y">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-3xl font-bold text-slate-800 mb-4">Our Mission</h2>
+          <p className="text-slate-600 text-lg leading-relaxed">
+            Our mission is to provide our customers — whether commercial or domestic — the best and highest quality roof that we can, at a fair price. We strive to ensure there are no unnecessary costs, and we explain everything every step of the way. <strong>No hidden charges.</strong>
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-16 text-white text-center" style={{ background: primary }}>
         <div className="max-w-3xl mx-auto px-6">
           <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
-          <p className="text-white/75 mb-8 text-lg">Contact us today for a free, no-obligation quote.</p>
+          <p className="text-white/75 mb-8 text-lg">Contact us today for a free, no-obligation quote. Roof inspections are always free.</p>
           <div className="flex flex-wrap gap-4 justify-center">
             {co.companyPhone && (
               <a href={`tel:${co.companyPhone}`}>
@@ -184,7 +232,7 @@ export default function WebsiteHome() {
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-slate-800 text-center text-xs">
-          © {new Date().getFullYear()} {name}. All rights reserved.
+          © {new Date().getFullYear()} {name} — David Cooper & Sons. All rights reserved.
         </div>
       </footer>
     </div>

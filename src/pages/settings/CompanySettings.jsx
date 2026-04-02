@@ -11,22 +11,22 @@ import { base44 } from "@/api/base44Client";
 
 export const COMPANY_STORAGE_KEY = "company_settings";
 export const COMPANY_DEFAULTS = {
-  companyName: "",
-  companyAddress: "",
-  companyPhone: "",
-  companyEmail: "",
-  companyWebsite: "",
+  companyName: "DC&S Roofing",
+  companyAddress: "Dublin, Ireland",
+  companyPhone: "+353 85 213 3061",
+  companyEmail: "support@dcsroofing.ie",
+  companyWebsite: "www.dcsroofing.ie",
   vatNumber: "",
   companyReg: "",
   logoUrl: "",
   primaryColor: "#1e3a5f",
   accentColor: "#e8730a",
-  footerText: "Thank you for your business!",
+  footerText: "Thank you for choosing DC&S Roofing — David Cooper & Sons.",
   bankName: "",
-  accountName: "",
+  accountName: "DC&S Roofing",
   iban: "",
   bic: "",
-  paymentNotes: "",
+  paymentNotes: "Please include your invoice number as reference when making payment.",
 };
 
 export function getCompanySettings() {

@@ -6,46 +6,46 @@ import { ChevronRight } from "lucide-react";
 
 const SERVICES = [
   {
-    title: "New Roof Installation",
+    title: "New Roof Installations",
     icon: "🏠",
     img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
-    desc: "Whether you're building new or replacing an aging roof, we offer full installation of all major roofing types.",
-    features: ["Asphalt shingles", "Metal roofing", "Flat/EPDM", "Tile & slate", "Wood shake"],
+    desc: "Whether you're building new or replacing an aging roof, we offer full installation across all major flat and pitched roofing systems.",
+    features: ["Torch on Felt", "PVC Systems (Alkorplan, ArmourPlan, Trocal)", "Slate & Tile", "Resitrix / Rubber Based Systems", "Commercial & domestic"],
   },
   {
-    title: "Roof Repair",
+    title: "Roof Repairs",
     icon: "🔧",
     img: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80",
-    desc: "From minor leak fixes to major storm damage, our team responds fast and does the job right.",
-    features: ["Storm damage", "Leak repair", "Ridge & flashing", "Fascia & soffit", "Emergency callouts"],
+    desc: "One-off and maintenance repairs on all roof systems. Our team responds fast and does the job right — first time.",
+    features: ["Torch on felt repairs", "PVC membrane repairs", "Slate & tile repairs", "Leak diagnosis & fix", "Emergency callouts"],
   },
   {
-    title: "Roof Inspection",
+    title: "Roof Inspections & Quotations",
     icon: "🔍",
     img: "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=80",
-    desc: "Get a full written assessment of your roof's condition — great for insurance claims and property sales.",
-    features: ["Written report", "Photo documentation", "Condition rating", "Repair recommendations", "Insurance-ready"],
+    desc: "Free of charge roof inspections with honest, detailed quotations. No obligation, no hidden costs.",
+    features: ["100% free of charge", "Detailed condition report", "Photo documentation", "Honest recommendations", "No sales pressure"],
   },
   {
-    title: "Gutters & Drainage",
-    icon: "💧",
-    img: "https://images.unsplash.com/photo-1625219975831-a8060f8bb62c?w=800&q=80",
-    desc: "Properly fitted gutters protect your home from water damage. We supply and install all systems.",
-    features: ["uPVC gutters", "Aluminium gutters", "Gutter cleaning", "Downpipe replacement", "French drains"],
-  },
-  {
-    title: "Siding & Fascia",
+    title: "PVC Roof Systems",
     icon: "🏗️",
     img: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&q=80",
-    desc: "Protect and enhance your property's exterior with professional siding and fascia installations.",
-    features: ["Fascia boards", "Soffit panels", "External cladding", "Bargeboards", "Paintwork"],
+    desc: "Specialists in PVC-based flat roof systems for commercial and domestic properties — durable, weatherproof and long-lasting.",
+    features: ["Alkorplan", "ArmourPlan", "Trocal", "Fully welded seams", "20+ year guarantees"],
+  },
+  {
+    title: "Resitrix & Rubber Roofing",
+    icon: "💧",
+    img: "https://images.unsplash.com/photo-1625219975831-a8060f8bb62c?w=800&q=80",
+    desc: "Installation and repair of Resitrix and other rubber-based flat roof systems — ideal for low-pitch and flat roofs.",
+    features: ["Resitrix EPDM", "Single-ply membranes", "New installations", "Repair & overlay", "Long-term weatherproofing"],
   },
   {
     title: "Maintenance Contracts",
     icon: "📋",
     img: "https://images.unsplash.com/photo-1566792636543-96c00f3428dc?w=800&q=80",
-    desc: "Keep your roof performing year-round with a scheduled maintenance agreement.",
-    features: ["Annual inspection", "Priority response", "Discounted repairs", "Custom schedule", "Written reports"],
+    desc: "Scheduled maintenance and servicing to keep your roof in peak condition all year round. Priority response included.",
+    features: ["Regular scheduled visits", "Annual inspection", "Priority emergency response", "Discounted repair rates", "Written condition reports"],
   },
 ];
 
@@ -66,7 +66,7 @@ export default function WebsiteServices() {
       <div className="py-20 text-white text-center" style={{ background: primary }}>
         <h1 className="text-5xl font-extrabold mb-4">Our Services</h1>
         <p className="text-white/75 text-xl max-w-2xl mx-auto px-4">
-          From inspections to full replacements — professional roofing for every need.
+          From free inspections to full installations — professional roofing across Dublin and Ireland with 20+ years experience.
         </p>
       </div>
 

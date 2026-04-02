@@ -50,7 +50,7 @@ export default function WebsiteContact() {
       <div className="py-20 text-white text-center" style={{ background: primary }}>
         <h1 className="text-5xl font-extrabold mb-4">Get in Touch</h1>
         <p className="text-white/75 text-xl max-w-2xl mx-auto px-4">
-          Request a free quote or ask us anything. We'll get back to you within 24 hours.
+          Request a free quote or ask us anything — roof inspections are always free of charge.
         </p>
       </div>
 
@@ -127,7 +127,7 @@ export default function WebsiteContact() {
                   onChange={e => upd("service", e.target.value)}
                 >
                   <option value="">Select a service...</option>
-                  {["New Roof Installation","Roof Repair","Roof Inspection","Gutters & Drainage","Siding & Fascia","Maintenance Contract","Other"].map(s => (
+                  {["New Roof Installation","Roof Repair","Roof Inspection & Quotation (Free)","PVC Roof System","Resitrix / Rubber Roofing","Maintenance Contract","Other"].map(s => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
