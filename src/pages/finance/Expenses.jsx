@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   PlusCircle, Upload, Camera, Loader2, Trash2, ImageIcon,
-  Sparkles, ExternalLink, PackagePlus, X, CheckSquare, Square, Check, XCircle, Pencil
+  Sparkles, ExternalLink, PackagePlus, X, CheckSquare, Square,
+  Check, XCircle, Pencil, ChevronDown, ChevronRight, FileText
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -34,11 +35,11 @@ const CAT_COLORS = {
   other: "bg-gray-100 text-gray-600"
 };
 
-const EMPTY = {
+const EMPTY_ENTRY = () => ({
   date: format(new Date(), "yyyy-MM-dd"),
   vendor: "", description: "", amount: "", category: "materials",
   payment_method: "credit_card", job_id: "", notes: "", receipt_url: "", status: "pending"
-};
+});
 
 const UNIT_MAP = { "sq ft": "sq_ft", "sqft": "sq_ft", "linear ft": "linear_ft", "sq": "square" };
 function normaliseUnit(raw) {
@@ -48,7 +49,6 @@ function normaliseUnit(raw) {
   return UNITS.find(v => lower.includes(v.replace("_", " ")) || lower.includes(v)) || "each";
 }
 
-// Material status: "pending" | "accepted" | "rejected"
 function makeMaterialItem(item) {
   return {
     name: item.name || "",
@@ -56,7 +56,7 @@ function makeMaterialItem(item) {
     dimensions: item.dimensions || "",
     unit: normaliseUnit(item.unit),
     unit_price: item.unit_price ? String(item.unit_price) : "",
-    status: "pending", // pending / accepted / rejected
+    status: "pending",
     editing: false,
   };
 }
@@ -64,20 +64,26 @@ function makeMaterialItem(item) {
 export default function Expenses() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(EMPTY);
-  const [editing, setEditing] = useState(null);
+
+  // Single-edit dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingExp, setEditingExp] = useState(null);
+  const [editForm, setEditForm] = useState(EMPTY_ENTRY());
+
+  // Multi-entry add dialog
+  const [addOpen, setAddOpen] = useState(false);
+  // entries: [{ id, receipt_url, scanning, form, collapsed }]
+  const [entries, setEntries] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [savingAll, setSavingAll] = useState(false);
+
   const [filterCat, setFilterCat] = useState("all");
 
-  // Multi-file upload state
-  const [receiptFiles, setReceiptFiles] = useState([]); // [{ url, scanning, name }]
-  const [globalUploading, setGlobalUploading] = useState(false);
-
-  // Materials review dialog
+  // Materials review
   const [detectedMaterials, setDetectedMaterials] = useState([]);
   const [addingMaterials, setAddingMaterials] = useState(false);
   const [savingMaterials, setSavingMaterials] = useState(false);
-  const [scannedLineItems, setScannedLineItems] = useState([]);
+  const [pendingLineItems, setPendingLineItems] = useState([]);
 
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ["expenses"],
@@ -92,21 +98,13 @@ export default function Expenses() {
     queryFn: () => base44.entities.Material.list()
   });
 
-  // ─── Mutations ────────────────────────────────────────────────────────────
-  const saveMutation = useMutation({
-    mutationFn: (data) => {
-      const payload = { ...data, amount: parseFloat(data.amount) || 0 };
-      return editing
-        ? base44.entities.Expense.update(editing.id, payload)
-        : base44.entities.Expense.create(payload);
-    },
-    onSuccess: async (_, data) => {
+  // ─── Single edit mutation ─────────────────────────────────────────────────
+  const updateMutation = useMutation({
+    mutationFn: (data) => base44.entities.Expense.update(editingExp.id, { ...data, amount: parseFloat(data.amount) || 0 }),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      toast.success(editing ? "Expense updated!" : "Expense added!");
-      handleClose();
-      if (data.category === "materials") {
-        detectNewMaterials(data);
-      }
+      toast.success("Expense updated!");
+      setEditOpen(false);
     }
   });
 
@@ -120,71 +118,74 @@ export default function Expenses() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["expenses"] })
   });
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
-  function handleClose() {
-    setOpen(false);
-    setForm(EMPTY);
-    setEditing(null);
-    setReceiptFiles([]);
-    setScannedLineItems([]);
-  }
-
+  // ─── Open edit dialog ─────────────────────────────────────────────────────
   function openEdit(exp) {
-    setEditing(exp);
-    setForm({ ...EMPTY, ...exp, amount: String(exp.amount || "") });
-    setReceiptFiles(exp.receipt_url ? [{ url: exp.receipt_url, name: "receipt", scanning: false }] : []);
-    setOpen(true);
+    setEditingExp(exp);
+    setEditForm({ ...EMPTY_ENTRY(), ...exp, amount: String(exp.amount || "") });
+    setEditOpen(true);
   }
 
-  const upd = (f, v) => setForm(p => ({ ...p, [f]: v }));
+  // ─── Add dialog helpers ───────────────────────────────────────────────────
+  function openAddDialog() {
+    setEntries([]);
+    setAddOpen(true);
+  }
 
-  // ─── Multi-file upload ─────────────────────────────────────────────────────
+  function closeAddDialog() {
+    setAddOpen(false);
+    setEntries([]);
+    setPendingLineItems([]);
+  }
+
+  function updEntry(id, field, value) {
+    setEntries(prev => prev.map(e => e.id === id ? { ...e, form: { ...e.form, [field]: value } } : e));
+  }
+
+  function removeEntry(id) {
+    setEntries(prev => prev.filter(e => e.id !== id));
+  }
+
+  function toggleCollapse(id) {
+    setEntries(prev => prev.map(e => e.id === id ? { ...e, collapsed: !e.collapsed } : e));
+  }
+
+  // ─── File upload + scan ───────────────────────────────────────────────────
   async function handleFilesSelected(files) {
     if (!files?.length) return;
-    setGlobalUploading(true);
+    setUploading(true);
     const fileArray = Array.from(files);
 
-    // Upload all files in parallel
     const uploaded = await Promise.allSettled(
       fileArray.map(async (file) => {
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        return { url: file_url, name: file.name, scanning: false };
+        return { file_url, name: file.name };
       })
     );
 
-    const succeeded = uploaded
-      .filter(r => r.status === "fulfilled")
-      .map(r => r.value);
+    const succeeded = uploaded.filter(r => r.status === "fulfilled").map(r => r.value);
+    setUploading(false);
 
-    setReceiptFiles(prev => {
-      const combined = [...prev, ...succeeded];
-      // Set the first uploaded file as the primary receipt_url if not set
-      if (combined.length > 0) {
-        upd("receipt_url", combined[0].url);
-      }
-      return combined;
-    });
-    setGlobalUploading(false);
+    if (!succeeded.length) { toast.error("Upload failed"); return; }
+    toast.success(`${succeeded.length} file(s) uploaded — scanning…`);
 
-    if (succeeded.length) toast.success(`${succeeded.length} file(s) uploaded`);
+    // Create a draft entry for each file, then scan
+    const newEntries = succeeded.map(f => ({
+      id: Math.random().toString(36).slice(2),
+      receipt_url: f.file_url,
+      fileName: f.name,
+      scanning: true,
+      collapsed: false,
+      form: { ...EMPTY_ENTRY(), receipt_url: f.file_url },
+    }));
 
-    // Auto-scan all newly uploaded files
-    for (const file of succeeded) {
-      await scanFile(file.url);
-    }
+    setEntries(prev => [...prev, ...newEntries]);
+
+    // Scan each in parallel
+    await Promise.all(newEntries.map(entry => scanEntry(entry.id, entry.receipt_url)));
   }
 
-  function removeReceiptFile(url) {
-    setReceiptFiles(prev => {
-      const updated = prev.filter(f => f.url !== url);
-      upd("receipt_url", updated[0]?.url || "");
-      return updated;
-    });
-  }
-
-  // ─── OCR Scan ─────────────────────────────────────────────────────────────
-  async function scanFile(url) {
-    setReceiptFiles(prev => prev.map(f => f.url === url ? { ...f, scanning: true } : f));
+  async function scanEntry(entryId, url) {
+    setEntries(prev => prev.map(e => e.id === entryId ? { ...e, scanning: true } : e));
     try {
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `You are a receipt/invoice data extraction assistant for a roofing company. Extract ALL available data from this receipt or invoice image as accurately as possible. For line_items, extract every individual product or service line — including its name, model/product number, dimensions/size if shown, quantity, unit price, and line total. Do not skip any line items.`,
@@ -217,78 +218,72 @@ export default function Expenses() {
         }
       });
 
-      if (result) {
-        setForm(p => ({
-          ...p,
-          vendor: result.vendor || p.vendor,
-          date: result.date || p.date,
-          amount: result.amount ? String(result.amount) : p.amount,
-          description: result.description || p.description,
-          category: result.category || p.category,
-          payment_method: result.payment_method || p.payment_method,
-        }));
-        if (result.line_items?.length) {
-          setScannedLineItems(prev => [...prev, ...result.line_items]);
-        }
-        toast.success(`Scanned — ${result.line_items?.length || 0} line item(s) detected`);
+      setEntries(prev => prev.map(e => {
+        if (e.id !== entryId) return e;
+        return {
+          ...e,
+          scanning: false,
+          collapsed: true, // auto-collapse after scan
+          lineItems: result?.line_items || [],
+          form: {
+            ...e.form,
+            vendor: result?.vendor || "",
+            date: result?.date || e.form.date,
+            amount: result?.amount ? String(result.amount) : "",
+            description: result?.description || "",
+            category: result?.category || "materials",
+            payment_method: result?.payment_method || "credit_card",
+          }
+        };
+      }));
+
+      if (result?.line_items?.length) {
+        setPendingLineItems(prev => [...prev, ...result.line_items]);
       }
     } catch {
-      toast.error("Scan failed for one file");
-    } finally {
-      setReceiptFiles(prev => prev.map(f => f.url === url ? { ...f, scanning: false } : f));
+      setEntries(prev => prev.map(e => e.id === entryId ? { ...e, scanning: false } : e));
+      toast.error(`Scan failed for one file`);
     }
   }
 
-  // ─── Material Detection ────────────────────────────────────────────────────
-  async function detectNewMaterials(expense) {
+  // ─── Save all entries ─────────────────────────────────────────────────────
+  async function handleSaveAll() {
+    if (!entries.length) return;
+    setSavingAll(true);
+    try {
+      await Promise.all(
+        entries.map(entry =>
+          base44.entities.Expense.create({ ...entry.form, amount: parseFloat(entry.form.amount) || 0 })
+        )
+      );
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      toast.success(`${entries.length} expense${entries.length > 1 ? "s" : ""} saved!`);
+      closeAddDialog();
+
+      // Detect new materials from accumulated line items
+      if (pendingLineItems.length > 0) {
+        detectNewMaterials(pendingLineItems);
+      }
+    } finally {
+      setSavingAll(false);
+    }
+  }
+
+  // ─── Material detection ───────────────────────────────────────────────────
+  async function detectNewMaterials(lineItems) {
     try {
       const existingNames = materials.map(m => m.name.toLowerCase());
-      let candidates = [];
-
-      if (scannedLineItems.length > 0) {
-        candidates = scannedLineItems.map(makeMaterialItem);
-      } else {
-        const text = [expense.vendor, expense.description, expense.notes].filter(Boolean).join(". ");
-        const result = await base44.integrations.Core.InvokeLLM({
-          prompt: `From this roofing materials expense entry, extract each individual material item purchased including its name, model/product number if mentioned, dimensions if mentioned, and unit price if mentioned. Entry: "${text}"`,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              items: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    model_number: { type: "string" },
-                    dimensions: { type: "string" },
-                    unit: { type: "string" },
-                    unit_price: { type: "number" }
-                  }
-                }
-              }
-            }
-          }
-        });
-        candidates = (result?.items || []).map(makeMaterialItem);
-      }
-
+      const candidates = lineItems.map(makeMaterialItem);
       const newItems = candidates.filter(c =>
         c.name && !existingNames.some(e => e.includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(e))
       );
-
-      setScannedLineItems([]);
-
       if (newItems.length > 0) {
         setDetectedMaterials(newItems);
         setAddingMaterials(true);
       }
-    } catch {
-      // non-critical, fail silently
-    }
+    } catch { /* non-critical */ }
   }
 
-  // ─── Save Materials ────────────────────────────────────────────────────────
   async function handleSaveDetectedMaterials() {
     const toAdd = detectedMaterials.filter(m => m.status === "accepted" && m.name);
     if (!toAdd.length) { setAddingMaterials(false); return; }
@@ -320,6 +315,7 @@ export default function Expenses() {
 
   const pendingOrAccepted = detectedMaterials.filter(m => m.status !== "rejected");
   const allAccepted = pendingOrAccepted.length > 0 && pendingOrAccepted.every(m => m.status === "accepted");
+  const acceptedCount = detectedMaterials.filter(m => m.status === "accepted").length;
 
   function toggleSelectAll() {
     if (allAccepted) {
@@ -329,20 +325,19 @@ export default function Expenses() {
     }
   }
 
-  const acceptedCount = detectedMaterials.filter(m => m.status === "accepted").length;
-
-  // ─── Filtered list ─────────────────────────────────────────────────────────
+  // ─── Filtered expense list ────────────────────────────────────────────────
   const filtered = filterCat === "all" ? expenses : expenses.filter(e => e.category === filterCat);
   const totalFiltered = filtered.reduce((s, e) => s + (e.amount || 0), 0);
 
   if (isLoading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
 
-  const anyScanning = receiptFiles.some(f => f.scanning);
+  const anyScanning = entries.some(e => e.scanning);
+  const canSave = entries.length > 0 && !anyScanning;
 
   return (
     <div>
       <PageHeader title="Expenses" subtitle={`${filtered.length} records • €${totalFiltered.toLocaleString(undefined, { minimumFractionDigits: 2 })} total`}>
-        <Button onClick={() => { setForm(EMPTY); setEditing(null); setReceiptFiles([]); setOpen(true); }}>
+        <Button onClick={openAddDialog}>
           <PlusCircle className="w-4 h-4 mr-2" /> Add Expense
         </Button>
       </PageHeader>
@@ -359,7 +354,7 @@ export default function Expenses() {
         <Card><CardContent className="text-center py-16">
           <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">No expenses yet.</p>
-          <Button className="mt-4" onClick={() => { setForm(EMPTY); setEditing(null); setReceiptFiles([]); setOpen(true); }}>Add Expense</Button>
+          <Button className="mt-4" onClick={openAddDialog}>Add Expense</Button>
         </CardContent></Card>
       ) : (
         <div className="space-y-2">
@@ -367,11 +362,10 @@ export default function Expenses() {
             <Card key={exp.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openEdit(exp)}>
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="w-12 h-12 rounded-lg border flex items-center justify-center flex-shrink-0 overflow-hidden bg-muted">
-                  {exp.receipt_url ? (
-                    <img src={exp.receipt_url} alt="receipt" className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                  )}
+                  {exp.receipt_url
+                    ? <img src={exp.receipt_url} alt="receipt" className="w-full h-full object-cover" />
+                    : <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                  }
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -412,150 +406,113 @@ export default function Expenses() {
         </div>
       )}
 
-      {/* ── Add/Edit Expense Dialog ── */}
-      <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Edit Expense" : "Add Expense"}</DialogTitle>
+      {/* ── ADD EXPENSES DIALOG (multi-entry) ── */}
+      <Dialog open={addOpen} onOpenChange={v => { if (!v) closeAddDialog(); }}>
+        <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col gap-0 p-0">
+          <DialogHeader className="px-6 pt-5 pb-3 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <PlusCircle className="w-4 h-4 text-primary" /> Add Expenses
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">Upload receipts/invoices — each file becomes a separate expense entry.</p>
           </DialogHeader>
 
-          {/* Multi-file Upload Zone */}
-          <div
-            className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer hover:bg-muted/40 transition-colors"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {receiptFiles.length > 0 ? (
-              <div onClick={e => e.stopPropagation()}>
-                <div className="flex flex-wrap gap-2 justify-center mb-3">
-                  {receiptFiles.map((f, i) => (
-                    <div key={f.url} className="relative group w-20 h-20">
-                      <img src={f.url} alt="" className="w-full h-full object-cover rounded-lg border" />
-                      {f.scanning && (
-                        <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
-                          <Loader2 className="w-5 h-5 text-white animate-spin" />
-                        </div>
-                      )}
-                      <button
-                        className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow"
-                        onClick={() => removeReceiptFile(f.url)}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                      {i === 0 && (
-                        <span className="absolute bottom-1 left-1 text-[9px] bg-black/60 text-white px-1 rounded">primary</span>
-                      )}
-                    </div>
-                  ))}
-                  {/* Add more */}
-                  <label className="w-20 h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors text-muted-foreground">
-                    <Upload className="w-4 h-4 mb-1" />
-                    <span className="text-[10px]">Add more</span>
-                    <input type="file" accept="image/*,application/pdf" multiple className="hidden"
-                      onChange={e => { handleFilesSelected(e.target.files); e.target.value = ""; }} />
-                  </label>
-                </div>
-                <div className="flex justify-center gap-2">
-                  <Button type="button" size="sm" variant="outline" disabled={anyScanning}
-                    onClick={() => receiptFiles.forEach(f => !f.scanning && scanFile(f.url))}>
-                    {anyScanning ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}
-                    {anyScanning ? "Scanning…" : "Re-scan All"}
-                  </Button>
-                  {receiptFiles[0] && (
-                    <a href={receiptFiles[0].url} target="_blank" rel="noopener noreferrer">
-                      <Button type="button" size="sm" variant="ghost"><ExternalLink className="w-3.5 h-3.5" /></Button>
-                    </a>
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            {/* Drop zone */}
+            <label className={cn(
+              "flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 cursor-pointer transition-colors",
+              uploading ? "border-primary/50 bg-primary/5" : "hover:bg-muted/40"
+            )}>
+              {uploading ? (
+                <Loader2 className="w-8 h-8 text-primary mb-2 animate-spin" />
+              ) : (
+                <Camera className="w-8 h-8 text-muted-foreground mb-2" />
+              )}
+              <p className="text-sm font-medium text-foreground">{uploading ? "Uploading…" : "Click to upload receipts / invoices"}</p>
+              <p className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF · Multiple files · AI auto-fills each entry</p>
+              <input
+                type="file" accept="image/*,application/pdf" multiple className="hidden"
+                onChange={e => { handleFilesSelected(e.target.files); e.target.value = ""; }}
+              />
+            </label>
+
+            {/* Collapsed entry list */}
+            {entries.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {entries.length} Receipt{entries.length > 1 ? "s" : ""} / Invoice{entries.length > 1 ? "s" : ""}
+                  </p>
+                  {anyScanning && (
+                    <span className="text-xs text-primary flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Scanning…
+                    </span>
                   )}
                 </div>
-              </div>
-            ) : (
-              <div className="py-4">
-                {globalUploading ? (
-                  <Loader2 className="w-8 h-8 text-muted-foreground mx-auto mb-2 animate-spin" />
-                ) : (
-                  <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                )}
-                <p className="text-sm text-muted-foreground">
-                  {globalUploading ? "Uploading…" : "Click or drag to upload receipt(s)"}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF · Multiple files supported · AI auto-scans</p>
+                {entries.map((entry, idx) => (
+                  <ExpenseEntryRow
+                    key={entry.id}
+                    entry={entry}
+                    index={idx}
+                    jobs={jobs}
+                    onUpdate={(field, val) => updEntry(entry.id, field, val)}
+                    onRemove={() => removeEntry(entry.id)}
+                    onToggleCollapse={() => toggleCollapse(entry.id)}
+                    onRescan={() => scanEntry(entry.id, entry.receipt_url)}
+                  />
+                ))}
               </div>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,application/pdf"
-              multiple
-              className="hidden"
-              onChange={e => { handleFilesSelected(e.target.files); e.target.value = ""; }}
-              onClick={e => e.stopPropagation()}
-            />
+
+            {/* Manual add (no receipt) */}
+            {!uploading && (
+              <button
+                onClick={() => {
+                  const id = Math.random().toString(36).slice(2);
+                  setEntries(prev => [...prev, { id, receipt_url: "", fileName: "Manual entry", scanning: false, collapsed: false, lineItems: [], form: EMPTY_ENTRY() }]);
+                }}
+                className="w-full text-xs text-muted-foreground border border-dashed rounded-lg py-2 hover:bg-muted/40 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <PlusCircle className="w-3.5 h-3.5" /> Add manual entry (no receipt)
+              </button>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Date *</Label>
-              <Input type="date" value={form.date} onChange={e => upd("date", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Amount (€) *</Label>
-              <Input type="number" step="0.01" placeholder="0.00" value={form.amount} onChange={e => upd("amount", e.target.value)} />
-            </div>
-            <div className="space-y-1.5 col-span-2">
-              <Label>Vendor</Label>
-              <Input placeholder="e.g. ABC Supply Co." value={form.vendor} onChange={e => upd("vendor", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Category</Label>
-              <Select value={form.category} onValueChange={v => upd("category", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c.replace("_", " ")}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Payment Method</Label>
-              <Select value={form.payment_method} onValueChange={v => upd("payment_method", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m} className="capitalize">{m.replace("_", " ")}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Linked Job</Label>
-              <Select value={form.job_id || "none"} onValueChange={v => upd("job_id", v === "none" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {jobs.map(j => <SelectItem key={j.id} value={j.id}>{j.customer_name} – {j.address?.split(",")[0]}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => upd("status", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5 col-span-2">
-              <Label>Description / Notes</Label>
-              <Textarea rows={2} value={form.notes || form.description} onChange={e => upd("notes", e.target.value)} placeholder="Optional notes..." />
-            </div>
-          </div>
-
-          <DialogFooter className="mt-2">
-            <Button variant="outline" onClick={handleClose}>Cancel</Button>
-            <Button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending || !form.amount || !form.date}>
-              {saveMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              {editing ? "Update" : "Save Expense"}
+          <DialogFooter className="px-6 py-4 border-t shrink-0 flex items-center justify-between">
+            <Button variant="outline" onClick={closeAddDialog}>Cancel</Button>
+            <Button onClick={handleSaveAll} disabled={!canSave || savingAll}>
+              {savingAll ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+              Save {entries.length > 0 ? `${entries.length} Expense${entries.length > 1 ? "s" : ""}` : ""}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Materials Review Dialog ── */}
+      {/* ── EDIT SINGLE EXPENSE DIALOG ── */}
+      <Dialog open={editOpen} onOpenChange={v => { if (!v) setEditOpen(false); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+          </DialogHeader>
+          {editForm.receipt_url && (
+            <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/30">
+              <img src={editForm.receipt_url} alt="receipt" className="w-16 h-16 object-cover rounded-lg border" />
+              <a href={editForm.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary flex items-center gap-1 hover:underline">
+                <ExternalLink className="w-3 h-3" /> View receipt
+              </a>
+            </div>
+          )}
+          <ExpenseFormFields form={editForm} jobs={jobs} onChange={(f, v) => setEditForm(p => ({ ...p, [f]: v }))} />
+          <DialogFooter className="mt-2">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={() => updateMutation.mutate(editForm)} disabled={updateMutation.isPending || !editForm.amount || !editForm.date}>
+              {updateMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── MATERIALS REVIEW DIALOG ── */}
       <Dialog open={addingMaterials} onOpenChange={v => { if (!v) { setAddingMaterials(false); setDetectedMaterials([]); } }}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
@@ -563,47 +520,31 @@ export default function Expenses() {
               <PackagePlus className="w-4 h-4 text-primary" /> New Materials Detected
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {detectedMaterials.length} item{detectedMaterials.length !== 1 ? "s" : ""} not in your catalogue. Review, edit, accept or reject each one before adding.
+              {detectedMaterials.length} item{detectedMaterials.length !== 1 ? "s" : ""} not in your catalogue. Review, edit, accept or reject each one.
             </p>
           </DialogHeader>
 
-          {/* Bulk actions bar */}
           <div className="flex items-center justify-between px-1 pb-1 border-b">
-            <button
-              onClick={toggleSelectAll}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {allAccepted
-                ? <CheckSquare className="w-4 h-4 text-primary" />
-                : <Square className="w-4 h-4" />
-              }
+            <button onClick={toggleSelectAll} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              {allAccepted ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
               {allAccepted ? "Deselect all" : "Accept all"}
             </button>
-            <div className="flex gap-3 text-xs text-muted-foreground">
+            <div className="flex gap-3 text-xs">
               <span className="text-emerald-600 font-medium">{acceptedCount} accepted</span>
               <span className="text-red-500 font-medium">{detectedMaterials.filter(m => m.status === "rejected").length} rejected</span>
-              <span>{detectedMaterials.filter(m => m.status === "pending").length} pending</span>
+              <span className="text-muted-foreground">{detectedMaterials.filter(m => m.status === "pending").length} pending</span>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2 pr-1 py-1">
             {detectedMaterials.map((m, i) => (
-              <MaterialReviewRow
-                key={i}
-                material={m}
-                onChange={(field, val) => updMaterial(i, field, val)}
-              />
+              <MaterialReviewRow key={i} material={m} onChange={(field, val) => updMaterial(i, field, val)} />
             ))}
           </div>
 
           <DialogFooter className="border-t pt-3 mt-0">
-            <Button variant="outline" onClick={() => { setAddingMaterials(false); setDetectedMaterials([]); }}>
-              Skip All
-            </Button>
-            <Button
-              onClick={handleSaveDetectedMaterials}
-              disabled={savingMaterials || acceptedCount === 0}
-            >
+            <Button variant="outline" onClick={() => { setAddingMaterials(false); setDetectedMaterials([]); }}>Skip All</Button>
+            <Button onClick={handleSaveDetectedMaterials} disabled={savingMaterials || acceptedCount === 0}>
               {savingMaterials ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PackagePlus className="w-4 h-4 mr-2" />}
               Add {acceptedCount > 0 ? `${acceptedCount} ` : ""}to Catalogue
             </Button>
@@ -614,7 +555,132 @@ export default function Expenses() {
   );
 }
 
-// ─── Individual material review row ───────────────────────────────────────────
+// ─── Collapsible expense entry row ───────────────────────────────────────────
+function ExpenseEntryRow({ entry, index, jobs, onUpdate, onRemove, onToggleCollapse, onRescan }) {
+  const { form, collapsed, scanning, receipt_url, fileName } = entry;
+  const displayName = form.vendor || fileName || `Entry ${index + 1}`;
+  const displayAmount = form.amount ? `€${parseFloat(form.amount).toFixed(2)}` : "—";
+
+  return (
+    <div className={cn("border rounded-xl overflow-hidden transition-all", scanning && "border-primary/40 bg-primary/5")}>
+      {/* Header row — always visible */}
+      <div
+        className="flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/30 transition-colors select-none"
+        onClick={onToggleCollapse}
+      >
+        {/* Thumbnail */}
+        <div className="w-10 h-10 rounded-lg border overflow-hidden bg-muted flex items-center justify-center shrink-0">
+          {receipt_url
+            ? <img src={receipt_url} alt="" className="w-full h-full object-cover" />
+            : <FileText className="w-4 h-4 text-muted-foreground" />
+          }
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{displayName}</p>
+          <p className="text-xs text-muted-foreground truncate">
+            {form.date ? format(new Date(form.date + "T00:00:00"), "MMM d, yyyy") : "No date"} · {displayAmount} · <span className="capitalize">{form.category}</span>
+          </p>
+        </div>
+
+        {scanning && <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />}
+
+        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+          {receipt_url && !scanning && (
+            <button
+              onClick={onRescan}
+              className="w-7 h-7 rounded border flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+              title="Re-scan"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button
+            onClick={onRemove}
+            className="w-7 h-7 rounded border flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+            title="Remove"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+          {collapsed
+            ? <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            : <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          }
+        </div>
+      </div>
+
+      {/* Expanded form */}
+      {!collapsed && (
+        <div className="px-4 pb-4 border-t bg-muted/10">
+          <div className="pt-3">
+            <ExpenseFormFields form={form} jobs={jobs} onChange={onUpdate} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Shared form fields ───────────────────────────────────────────────────────
+function ExpenseFormFields({ form, jobs, onChange }) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-1.5">
+        <Label className="text-xs">Date *</Label>
+        <Input type="date" value={form.date} onChange={e => onChange("date", e.target.value)} />
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Amount (€) *</Label>
+        <Input type="number" step="0.01" placeholder="0.00" value={form.amount} onChange={e => onChange("amount", e.target.value)} />
+      </div>
+      <div className="space-y-1.5 col-span-2">
+        <Label className="text-xs">Vendor</Label>
+        <Input placeholder="e.g. ABC Supply Co." value={form.vendor} onChange={e => onChange("vendor", e.target.value)} />
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Category</Label>
+        <Select value={form.category} onValueChange={v => onChange("category", v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c.replace("_", " ")}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Payment Method</Label>
+        <Select value={form.payment_method} onValueChange={v => onChange("payment_method", v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m} className="capitalize">{m.replace("_", " ")}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Linked Job</Label>
+        <Select value={form.job_id || "none"} onValueChange={v => onChange("job_id", v === "none" ? "" : v)}>
+          <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">None</SelectItem>
+            {jobs.map(j => <SelectItem key={j.id} value={j.id}>{j.customer_name} – {j.address?.split(",")[0]}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Status</Label>
+        <Select value={form.status} onValueChange={v => onChange("status", v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5 col-span-2">
+        <Label className="text-xs">Description / Notes</Label>
+        <Textarea rows={2} value={form.notes || form.description || ""} onChange={e => onChange("notes", e.target.value)} placeholder="Optional notes..." />
+      </div>
+    </div>
+  );
+}
+
+// ─── Material review row ──────────────────────────────────────────────────────
 function MaterialReviewRow({ material: m, onChange }) {
   const isAccepted = m.status === "accepted";
   const isRejected = m.status === "rejected";
@@ -627,86 +693,58 @@ function MaterialReviewRow({ material: m, onChange }) {
       isRejected && "border-red-200 bg-red-50/40 opacity-60",
       !isAccepted && !isRejected && "border-border"
     )}>
-      {/* Header row */}
       <div className="flex items-center gap-2">
-        {/* Status indicator */}
         <div className="flex gap-1 shrink-0">
-          <button
-            title="Accept"
-            onClick={() => onChange("status", isAccepted ? "pending" : "accepted")}
-            className={cn("w-7 h-7 rounded-md flex items-center justify-center transition-colors", isAccepted ? "bg-emerald-500 text-white" : "border hover:bg-emerald-50 hover:border-emerald-300 text-muted-foreground")}
-          >
+          <button title="Accept" onClick={() => onChange("status", isAccepted ? "pending" : "accepted")}
+            className={cn("w-7 h-7 rounded-md flex items-center justify-center transition-colors", isAccepted ? "bg-emerald-500 text-white" : "border hover:bg-emerald-50 hover:border-emerald-300 text-muted-foreground")}>
             <Check className="w-3.5 h-3.5" />
           </button>
-          <button
-            title="Reject"
-            onClick={() => onChange("status", isRejected ? "pending" : "rejected")}
-            className={cn("w-7 h-7 rounded-md flex items-center justify-center transition-colors", isRejected ? "bg-red-400 text-white" : "border hover:bg-red-50 hover:border-red-300 text-muted-foreground")}
-          >
+          <button title="Reject" onClick={() => onChange("status", isRejected ? "pending" : "rejected")}
+            className={cn("w-7 h-7 rounded-md flex items-center justify-center transition-colors", isRejected ? "bg-red-400 text-white" : "border hover:bg-red-50 hover:border-red-300 text-muted-foreground")}>
             <XCircle className="w-3.5 h-3.5" />
           </button>
         </div>
-
-        {/* Name */}
-        {isEditing ? (
-          <Input
-            value={m.name}
-            onChange={e => onChange("name", e.target.value)}
-            className="h-7 text-sm font-medium flex-1"
-            placeholder="Material name"
-            autoFocus
-          />
-        ) : (
-          <span className={cn("flex-1 text-sm font-medium truncate", isRejected && "line-through text-muted-foreground")}>{m.name || <span className="text-muted-foreground italic">Unnamed</span>}</span>
-        )}
-
-        {/* Edit toggle */}
-        <button
-          onClick={() => onChange("editing", !isEditing)}
-          className="w-7 h-7 rounded-md border flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors shrink-0"
-          title={isEditing ? "Done editing" : "Edit details"}
-        >
+        {isEditing
+          ? <Input value={m.name} onChange={e => onChange("name", e.target.value)} className="h-7 text-sm font-medium flex-1" placeholder="Material name" autoFocus />
+          : <span className={cn("flex-1 text-sm font-medium truncate", isRejected && "line-through text-muted-foreground")}>{m.name || <span className="italic text-muted-foreground">Unnamed</span>}</span>
+        }
+        <button onClick={() => onChange("editing", !isEditing)}
+          className="w-7 h-7 rounded-md border flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors shrink-0">
           {isEditing ? <Check className="w-3.5 h-3.5 text-primary" /> : <Pencil className="w-3 h-3" />}
         </button>
       </div>
-
-      {/* Detail fields — always visible, editable when isEditing */}
       {!isRejected && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 ml-16">
           <div>
             <p className="text-[10px] text-muted-foreground mb-0.5">Model / SKU</p>
-            {isEditing ? (
-              <Input value={m.model_number} onChange={e => onChange("model_number", e.target.value)} className="h-6 text-xs" placeholder="ABC-123" />
-            ) : (
-              <p className="text-xs text-foreground truncate">{m.model_number || <span className="text-muted-foreground/60">—</span>}</p>
-            )}
+            {isEditing
+              ? <Input value={m.model_number} onChange={e => onChange("model_number", e.target.value)} className="h-6 text-xs" placeholder="ABC-123" />
+              : <p className="text-xs truncate">{m.model_number || <span className="text-muted-foreground/60">—</span>}</p>
+            }
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground mb-0.5">Dimensions</p>
-            {isEditing ? (
-              <Input value={m.dimensions} onChange={e => onChange("dimensions", e.target.value)} className="h-6 text-xs" placeholder="e.g. 1m×5m" />
-            ) : (
-              <p className="text-xs text-foreground truncate">{m.dimensions || <span className="text-muted-foreground/60">—</span>}</p>
-            )}
+            {isEditing
+              ? <Input value={m.dimensions} onChange={e => onChange("dimensions", e.target.value)} className="h-6 text-xs" placeholder="e.g. 1m×5m" />
+              : <p className="text-xs truncate">{m.dimensions || <span className="text-muted-foreground/60">—</span>}</p>
+            }
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground mb-0.5">Unit</p>
-            {isEditing ? (
-              <Select value={m.unit} onValueChange={v => onChange("unit", v)}>
-                <SelectTrigger className="h-6 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u} className="text-xs">{u.replace("_", " ")}</SelectItem>)}</SelectContent>
-              </Select>
-            ) : (
-              <p className="text-xs text-foreground">{m.unit?.replace("_", " ")}</p>
-            )}
+            {isEditing
+              ? <Select value={m.unit} onValueChange={v => onChange("unit", v)}>
+                  <SelectTrigger className="h-6 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u} className="text-xs">{u.replace("_", " ")}</SelectItem>)}</SelectContent>
+                </Select>
+              : <p className="text-xs">{m.unit?.replace("_", " ")}</p>
+            }
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground mb-0.5">Unit Price (€)</p>
-            {isEditing ? (
-              <Input type="number" step="0.01" placeholder="0.00" value={m.unit_price} onChange={e => onChange("unit_price", e.target.value)} className="h-6 text-xs" />
-            ) : (
-              <p className="text-xs font-medium text-foreground">{m.unit_price ? `€${parseFloat(m.unit_price).toFixed(2)}` : <span className="text-muted-foreground/60">—</span>}</p>
-            )}
+            {isEditing
+              ? <Input type="number" step="0.01" placeholder="0.00" value={m.unit_price} onChange={e => onChange("unit_price", e.target.value)} className="h-6 text-xs" />
+              : <p className="text-xs font-medium">{m.unit_price ? `€${parseFloat(m.unit_price).toFixed(2)}` : <span className="text-muted-foreground/60">—</span>}</p>
+            }
           </div>
         </div>
       )}
