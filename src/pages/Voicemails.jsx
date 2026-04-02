@@ -134,31 +134,37 @@ export default function Voicemails() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Mail className="w-5 h-5 text-amber-600 flex-shrink-0" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <Mail className="w-5 h-5 text-amber-600" />
+            </div>
             <div>
               <p className="text-2xl font-bold">{stats.new}</p>
-              <p className="text-xs text-muted-foreground">New Voicemails</p>
+              <p className="text-sm text-muted-foreground">New Voicemails</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Play className="w-5 h-5 text-blue-600 flex-shrink-0" />
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <Play className="w-5 h-5 text-blue-600" />
+            </div>
             <div>
               <p className="text-2xl font-bold">{stats.listened}</p>
-              <p className="text-xs text-muted-foreground">Listened</p>
+              <p className="text-sm text-muted-foreground">Listened</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            </div>
             <div>
               <p className="text-2xl font-bold">{stats.resolved}</p>
-              <p className="text-xs text-muted-foreground">Resolved</p>
+              <p className="text-sm text-muted-foreground">Resolved</p>
             </div>
           </CardContent>
         </Card>
@@ -216,7 +222,7 @@ export default function Voicemails() {
           </Card>
         ) : (
           sorted.map((voicemail) => (
-            <Card key={voicemail.id} className="hover:shadow-sm transition-shadow">
+            <Card key={voicemail.id} className={`hover:shadow-md transition-all ${voicemail.status === "new" ? "border-amber-200 bg-amber-50/30" : ""}`}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   {/* Play button */}

@@ -181,7 +181,7 @@ export default function Timesheets() {
     const pay = payMap.get(t.id);
     return s + (pay?.wage_cost ?? t.wage_cost ?? 0);
   }, 0);
-  const fmt = (n) => "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt = (n) => "€" + Number(n || 0).toLocaleString("en-IE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // ── Selection helpers ──
   const allSelected = filtered.length > 0 && filtered.every(t => selected.has(t.id));
@@ -205,8 +205,8 @@ export default function Timesheets() {
 
   return (
     <div>
-      <PageHeader title="Timesheets" subtitle={`${filtered.length} entries · ${totalHours.toFixed(1)} hrs · ${fmt(totalWageCost)} total labour cost`}>
-        <Button onClick={openCreate}><PlusCircle className="w-4 h-4 mr-2" /> Log Time</Button>
+      <PageHeader title="Timesheets" subtitle={`${filtered.length} entries · ${totalHours.toFixed(1)} hrs · ${fmt(totalWageCost)} labour cost`}>
+        <Button onClick={openCreate} className="gap-2"><PlusCircle className="w-4 h-4" /> Log Time</Button>
       </PageHeader>
 
       {/* Filter bar */}
@@ -217,7 +217,7 @@ export default function Timesheets() {
         </Button>
 
         {showFilters && (
-          <div className="mt-3 p-4 border rounded-lg bg-muted/30 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="mt-3 p-4 border rounded-xl bg-muted/30 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -271,7 +271,7 @@ export default function Timesheets() {
 
       {/* Bulk action bar */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
+        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-xl">
           <span className="text-sm font-medium text-primary">{selected.size} selected</span>
           <div className="flex gap-2 ml-auto">
             <Button size="sm" variant="outline" className="text-green-700 border-green-300 h-7 text-xs" onClick={bulkApprove}>
@@ -345,7 +345,7 @@ export default function Timesheets() {
                          : <span className="text-muted-foreground">—</span>}
                      </TableCell>
                      <TableCell className="text-sm text-muted-foreground">
-                       {rate ? `$${rate}/hr` : "—"}
+                       {rate ? `€${rate}/hr` : "—"}
                      </TableCell>
                      <TableCell className="text-sm font-semibold">
                        {wageCost != null

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import PageHeader from "@/components/shared/PageHeader";
-import { Phone, MessageSquare, ArrowDownLeft, ArrowUpRight, Search, Download } from "lucide-react";
+import { Phone, MessageSquare, ArrowDownLeft, ArrowUpRight, Search, Download, PhoneIncoming, PhoneMissed, PhoneCall } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -66,6 +66,28 @@ export default function CommunicationLogs() {
           <Download className="w-4 h-4" /> Export
         </Button>
       </PageHeader>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        {[
+          { label: "Total", value: filtered.length, icon: PhoneCall, color: "bg-blue-100 text-blue-600" },
+          { label: "Incoming", value: filtered.filter(l => l.direction === "incoming").length, icon: PhoneIncoming, color: "bg-emerald-100 text-emerald-600" },
+          { label: "Missed", value: filtered.filter(l => l.status === "missed").length, icon: PhoneMissed, color: "bg-amber-100 text-amber-600" },
+          { label: "SMS", value: filtered.filter(l => l.type === "sms").length, icon: MessageSquare, color: "bg-purple-100 text-purple-600" },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <Card key={label} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+                <Icon className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xl font-bold">{value}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Filters */}
       <Card className="mb-6">
