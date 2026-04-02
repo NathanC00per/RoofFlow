@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import PageHeader from "@/components/shared/PageHeader";
-import { Phone, MessageSquare, ArrowDownLeft, ArrowUpRight, Search, Download, PhoneIncoming, PhoneMissed, PhoneCall } from "lucide-react";
+import { Phone, MessageSquare, ArrowDownLeft, ArrowUpRight, Search, Download, PhoneIncoming, PhoneMissed, PhoneCall, Globe } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -47,10 +47,10 @@ export default function CommunicationLogs() {
     return true;
   });
 
-  const typeIcon = (type) => type === "call" ? <Phone className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />;
+  const typeIcon = (type) => type === "call" ? <Phone className="w-4 h-4" /> : type === "web_enquiry" ? <Globe className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />;
   const directionIcon = (dir) => dir === "incoming" ? <ArrowDownLeft className="w-4 h-4 text-emerald-600" /> : <ArrowUpRight className="w-4 h-4 text-blue-600" />;
 
-  const typeColor = (type) => type === "call" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-purple-50 text-purple-700 border-purple-200";
+  const typeColor = (type) => type === "call" ? "bg-blue-50 text-blue-700 border-blue-200" : type === "web_enquiry" ? "bg-orange-50 text-orange-700 border-orange-200" : "bg-purple-50 text-purple-700 border-purple-200";
   const statusColor = (status) => 
     status === "completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
     status === "missed" ? "bg-amber-50 text-amber-700 border-amber-200" :
@@ -68,12 +68,13 @@ export default function CommunicationLogs() {
       </PageHeader>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         {[
           { label: "Total", value: filtered.length, icon: PhoneCall, color: "bg-blue-100 text-blue-600" },
           { label: "Incoming", value: filtered.filter(l => l.direction === "incoming").length, icon: PhoneIncoming, color: "bg-emerald-100 text-emerald-600" },
           { label: "Missed", value: filtered.filter(l => l.status === "missed").length, icon: PhoneMissed, color: "bg-amber-100 text-amber-600" },
           { label: "SMS", value: filtered.filter(l => l.type === "sms").length, icon: MessageSquare, color: "bg-purple-100 text-purple-600" },
+          { label: "Web Enquiries", value: filtered.filter(l => l.type === "web_enquiry").length, icon: Globe, color: "bg-orange-100 text-orange-600" },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center gap-3">
@@ -110,6 +111,7 @@ export default function CommunicationLogs() {
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="call">Calls</SelectItem>
                 <SelectItem value="sms">SMS</SelectItem>
+                <SelectItem value="web_enquiry">Web Enquiries</SelectItem>
               </SelectContent>
             </Select>
             <Select value={directionFilter} onValueChange={setDirectionFilter}>
@@ -215,7 +217,7 @@ export default function CommunicationLogs() {
                             {log.duration_seconds ? `${Math.floor(log.duration_seconds / 60)}m ${log.duration_seconds % 60}s` : "—"}
                           </p>
                         ) : (
-                          <p className="text-sm truncate max-w-xs">{log.message_body || "—"}</p>
+                          <p className="text-sm truncate max-w-xs text-slate-600">{log.message_body || "—"}</p>
                         )}
                       </td>
                       <td className="px-4 py-3">

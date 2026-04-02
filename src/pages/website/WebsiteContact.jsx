@@ -30,6 +30,18 @@ export default function WebsiteContact() {
     if (!form.name || !form.email || !form.message) { toast.error("Please fill in all required fields"); return; }
     setSending(true);
     try {
+      // Save to CommunicationLog so it appears in the internal Communications section
+      await base44.entities.CommunicationLog.create({
+        type: "web_enquiry",
+        direction: "incoming",
+        phone_number: form.phone || "N/A",
+        contact_name: form.name,
+        message_body: `Service: ${form.service || "Not specified"}\n\nMessage:\n${form.message}\n\nEmail: ${form.email}`,
+        timestamp: new Date().toISOString(),
+        status: "completed",
+        notes: `Web enquiry from ${form.name} (${form.email})`,
+      });
+
       if (co.companyEmail) {
         await base44.integrations.Core.SendEmail({
           to: co.companyEmail,

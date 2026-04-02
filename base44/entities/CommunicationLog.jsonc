@@ -6,7 +6,8 @@
       "type": "string",
       "enum": [
         "call",
-        "sms"
+        "sms",
+        "web_enquiry"
       ],
       "description": "Type of communication"
     },
@@ -28,7 +29,7 @@
     },
     "message_body": {
       "type": "string",
-      "description": "SMS message content (for SMS only)"
+      "description": "SMS message content or web enquiry details"
     },
     "duration_seconds": {
       "type": "number",
