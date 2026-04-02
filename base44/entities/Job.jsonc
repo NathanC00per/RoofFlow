@@ -81,12 +81,10 @@
       "default": "medium"
     },
     "estimated_cost": {
-      "type": "number",
-      "description": "Estimated cost of the job"
+      "type": "number"
     },
     "actual_cost": {
-      "type": "number",
-      "description": "Actual cost upon completion"
+      "type": "number"
     },
     "description": {
       "type": "string",
@@ -104,15 +102,69 @@
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "List of assigned employee IDs"
+      }
     },
     "photos": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Photo URLs of the job site"
+      "description": "General photo URLs (legacy)"
+    },
+    "photos_access": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Access & approach photos"
+    },
+    "photos_overall": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Overall roof photos"
+    },
+    "photos_damage": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Damage photos"
+    },
+    "photos_interior": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Interior photos"
+    },
+    "photos_exterior": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Exterior / facade photos"
+    },
+    "plan_of_action": {
+      "type": "string",
+      "description": "Detailed plan of action and scope of works"
+    },
+    "plan_materials_required": {
+      "type": "string",
+      "description": "Materials required for the job"
+    },
+    "plan_access_notes": {
+      "type": "string",
+      "description": "Access / site-specific notes for the crew"
+    },
+    "plan_health_safety": {
+      "type": "string",
+      "description": "Health & safety considerations"
+    },
+    "plan_timeline": {
+      "type": "string",
+      "description": "Estimated timeline and phasing"
     },
     "roof_condition": {
       "type": "string",
@@ -122,31 +174,25 @@
         "fair",
         "poor",
         "critical"
-      ],
-      "description": "Overall roof condition at intake"
+      ]
     },
     "roof_age_years": {
-      "type": "number",
-      "description": "Age of the existing roof in years"
+      "type": "number"
     },
     "roof_area_sq_ft": {
-      "type": "number",
-      "description": "Total roof area in square feet"
+      "type": "number"
     },
     "layers_count": {
-      "type": "number",
-      "description": "Number of existing roofing layers"
+      "type": "number"
     },
     "damage_types": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Types of damage present"
+      }
     },
     "line_items": {
       "type": "array",
-      "description": "Materials and labour line items captured at intake",
       "items": {
         "type": "object",
         "properties": {
@@ -187,16 +233,13 @@
       "default": 0
     },
     "template_id": {
-      "type": "string",
-      "description": "Reference to JobTemplate used for this job"
+      "type": "string"
     },
     "template_name": {
-      "type": "string",
-      "description": "Denormalized template name"
+      "type": "string"
     },
     "custom_fields": {
       "type": "array",
-      "description": "Custom field values from the selected template",
       "items": {
         "type": "object",
         "properties": {
@@ -214,12 +257,10 @@
       }
     },
     "maintenance_contract_id": {
-      "type": "string",
-      "description": "Reference to MaintenanceContract if this job was generated from one"
+      "type": "string"
     },
     "maintenance_contract_name": {
-      "type": "string",
-      "description": "Denormalized contract name"
+      "type": "string"
     }
   },
   "required": [

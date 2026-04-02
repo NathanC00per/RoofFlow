@@ -16,6 +16,8 @@ import PostJobModal from "@/components/jobs/PostJobModal";
 import CustomFieldsSection from "@/components/jobs/CustomFieldsSection";
 import { Save, Loader2, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
+import JobPhotos from "@/components/jobs/JobPhotos";
+import JobPlanOfAction from "@/components/jobs/JobPlanOfAction";
 
 const JOB_TYPES = [
   { value: "new_roof", label: "New Roof" },
@@ -92,6 +94,18 @@ export default function JobForm({ existingJob }) {
     roof_area_sq_ft: "",
     damage_types: [],
     layers_count: "",
+    // photo categories
+    photos_access: [],
+    photos_overall: [],
+    photos_damage: [],
+    photos_interior: [],
+    photos_exterior: [],
+    // plan of action
+    plan_of_action: "",
+    plan_materials_required: "",
+    plan_access_notes: "",
+    plan_health_safety: "",
+    plan_timeline: "",
     // line items
     line_items: [],
     discount_amount: 0,
@@ -384,6 +398,18 @@ export default function JobForm({ existingJob }) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Plan of Action */}
+        <JobPlanOfAction
+          value={form}
+          onChange={patch => setForm(prev => ({ ...prev, ...patch }))}
+        />
+
+        {/* Site Photography */}
+        <JobPhotos
+          value={form}
+          onChange={patch => setForm(prev => ({ ...prev, ...patch }))}
+        />
 
         {/* Materials & Labour */}
         <Card>

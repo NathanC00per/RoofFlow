@@ -17,6 +17,8 @@ import JobRoofAssessment from "@/components/jobs/JobRoofAssessment";
 import JobLineItems from "@/components/jobs/JobLineItems";
 import CustomFieldsDisplay from "@/components/jobs/CustomFieldsDisplay";
 import JobScheduleCard from "@/components/jobs/JobScheduleCard";
+import JobPhotos from "@/components/jobs/JobPhotos";
+import JobPlanOfAction from "@/components/jobs/JobPlanOfAction";
 import { generateCrewSheetPDF } from "@/lib/generateCrewSheet";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -238,6 +240,12 @@ export default function JobDetail() {
           {/* Roof assessment */}
           <JobRoofAssessment job={job} />
 
+          {/* Plan of Action */}
+          <JobPlanOfAction value={job} onChange={() => {}} readOnly />
+
+          {/* Site Photography */}
+          <JobPhotos value={job} onChange={() => {}} readOnly />
+
           {/* Intake line items */}
           <JobLineItems job={job} />
 
@@ -284,22 +292,6 @@ export default function JobDetail() {
               <JobsMap singleJob={job} height="220px" />
             </CardContent>
           </Card>
-
-          {/* Photos */}
-          {(job.photos || []).length > 0 && (
-            <Card>
-              <CardHeader><CardTitle className="text-base">Photos</CardTitle></CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2">
-                  {job.photos.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                      <img src={url} alt={`Photo ${i + 1}`} className="rounded-lg w-full h-24 object-cover hover:opacity-90 transition-opacity" />
-                    </a>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Maintenance contract link */}
           {job.maintenance_contract_id && (
