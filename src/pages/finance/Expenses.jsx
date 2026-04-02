@@ -66,6 +66,7 @@ export default function Expenses() {
   const [detectedMaterials, setDetectedMaterials] = useState([]);
   const [addingMaterials, setAddingMaterials] = useState(false);
   const [savingMaterials, setSavingMaterials] = useState(false);
+  const [scannedLineItems, setScannedLineItems] = useState([]);
 
   const saveMutation = useMutation({
     mutationFn: (data) => {
@@ -87,27 +88,76 @@ export default function Expenses() {
 
   async function detectNewMaterials(expense) {
     try {
-      const text = [expense.vendor, expense.description, expense.notes].filter(Boolean).join(". ");
       const existingNames = materials.map(m => m.name.toLowerCase());
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `From this roofing materials expense entry, extract a list of specific roofing material items that were likely purchased. Only return distinct material product names (e.g. "Ridge Cap Shingles", "Flashing Roll", "Roofing Felt"). Be concise and specific. Entry: "${text}"`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            items: { type: "array", items: { type: "string" }, description: "List of material names detected" }
+
+      let candidates = [];
+
+      if (scannedLineItems.length > 0) {
+        // Use the rich line item data from the receipt scan
+        candidates = scannedLineItems.map(item => ({
+          name: item.name,
+          model_number: item.model_number || "",
+          dimensions: item.dimensions || "",
+          unit: normaliseUnit(item.unit) || "each",
+          unit_price: item.unit_price ? String(item.unit_price) : "",
+          include: true,
+        }));
+      } else {
+        // Fallback: ask the LLM to extract items from text
+        const text = [expense.vendor, expense.description, expense.notes].filter(Boolean).join(". ");
+        const result = await base44.integrations.Core.InvokeLLM({
+          prompt: `From this roofing materials expense entry, extract each individual material item purchased including its name, model/product number if mentioned, dimensions if mentioned, and unit price if mentioned. Entry: "${text}"`,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              items: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    model_number: { type: "string" },
+                    dimensions: { type: "string" },
+                    unit: { type: "string" },
+                    unit_price: { type: "number" }
+                  }
+                }
+              }
+            }
           }
-        }
-      });
-      const detected = (result?.items || []).filter(name =>
-        name && !existingNames.some(e => e.includes(name.toLowerCase()) || name.toLowerCase().includes(e))
+        });
+        candidates = (result?.items || []).map(item => ({
+          name: item.name,
+          model_number: item.model_number || "",
+          dimensions: item.dimensions || "",
+          unit: normaliseUnit(item.unit) || "each",
+          unit_price: item.unit_price ? String(item.unit_price) : "",
+          include: true,
+        }));
+      }
+
+      const newItems = candidates.filter(c =>
+        c.name && !existingNames.some(e => e.includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(e))
       );
-      if (detected.length > 0) {
-        setDetectedMaterials(detected.map(name => ({ name, unit: "each", unit_price: "", include: true })));
+
+      if (newItems.length > 0) {
+        setDetectedMaterials(newItems);
         setAddingMaterials(true);
       }
+      // Reset scanned line items after use
+      setScannedLineItems([]);
     } catch {
       // silently fail — this is non-critical
     }
+  }
+
+  const UNIT_MAP = { "sq ft": "sq_ft", "sqft": "sq_ft", "linear ft": "linear_ft", "linear_ft": "linear_ft", "sq": "square" };
+  function normaliseUnit(raw) {
+    if (!raw) return "each";
+    const lower = raw.toLowerCase().trim();
+    if (UNIT_MAP[lower]) return UNIT_MAP[lower];
+    const valid = ["each","sq_ft","bundle","roll","gallon","box","sheet","linear_ft","square","bag","tube"];
+    return valid.find(v => lower.includes(v.replace("_"," ")) || lower.includes(v)) || "each";
   }
 
   async function handleSaveDetectedMaterials() {
@@ -115,14 +165,18 @@ export default function Expenses() {
     if (!toAdd.length) { setAddingMaterials(false); return; }
     setSavingMaterials(true);
     try {
-      await Promise.all(toAdd.map(m =>
-        base44.entities.Material.create({
+      await Promise.all(toAdd.map(m => {
+        const descParts = [m.dimensions].filter(Boolean);
+        return base44.entities.Material.create({
           name: m.name,
+          sku: m.model_number || undefined,
+          description: descParts.length ? descParts.join(" | ") : undefined,
           unit: m.unit || "each",
           unit_price: parseFloat(m.unit_price) || 0,
+          unit_cost: parseFloat(m.unit_price) || 0,
           is_active: true,
-        })
-      ));
+        });
+      }));
       queryClient.invalidateQueries({ queryKey: ["materials"] });
       toast.success(`${toAdd.length} material${toAdd.length > 1 ? "s" : ""} added to catalogue!`);
       setAddingMaterials(false);
@@ -178,17 +232,33 @@ export default function Expenses() {
     setScanning(true);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Extract expense data from this receipt/invoice image. Return only the JSON fields you can confidently identify.`,
+        prompt: `You are a receipt/invoice data extraction assistant for a roofing company. Extract ALL available data from this receipt or invoice image as accurately as possible. For line_items, extract every individual product or service line — including its name, model/product number, dimensions/size if shown, quantity, unit price, and line total. Do not skip any line items.`,
         file_urls: [url],
         response_json_schema: {
           type: "object",
           properties: {
             vendor: { type: "string" },
             date: { type: "string", description: "YYYY-MM-DD format" },
-            amount: { type: "number" },
-            description: { type: "string" },
+            amount: { type: "number", description: "Grand total amount" },
+            description: { type: "string", description: "Brief summary of what was purchased" },
             category: { type: "string", enum: ["materials","labor","equipment","fuel","tools","permits","insurance","office","other"] },
-            payment_method: { type: "string", enum: ["cash","check","credit_card","debit_card","ach","other"] }
+            payment_method: { type: "string", enum: ["cash","check","credit_card","debit_card","ach","other"] },
+            line_items: {
+              type: "array",
+              description: "All individual line items on the receipt",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string", description: "Product or service name" },
+                  model_number: { type: "string", description: "Model, SKU, or product code if shown" },
+                  dimensions: { type: "string", description: "Size or dimensions if specified e.g. 10x10, 3m x 5m, 25kg" },
+                  quantity: { type: "number" },
+                  unit: { type: "string", description: "Unit of measure e.g. each, sq ft, bundle, roll, sheet" },
+                  unit_price: { type: "number" },
+                  total: { type: "number" }
+                }
+              }
+            }
           }
         }
       });
@@ -202,7 +272,11 @@ export default function Expenses() {
           category: result.category || p.category,
           payment_method: result.payment_method || p.payment_method,
         }));
-        toast.success("Receipt data extracted automatically!");
+        // Store line items for later use in material detection
+        if (result.line_items?.length) {
+          setScannedLineItems(result.line_items);
+        }
+        toast.success(`Receipt scanned — ${result.line_items?.length || 0} line item(s) detected!`);
       }
     } catch (e) {
       toast.error("Scan failed");
@@ -312,36 +386,53 @@ export default function Expenses() {
               These materials from the expense aren't in your catalogue yet. Would you like to add them?
             </p>
           </DialogHeader>
-          <div className="space-y-3">
-            {detectedMaterials.map((m, i) => (
-              <div key={i} className="flex items-center gap-3 border rounded-lg p-3">
-                <input
-                  type="checkbox"
-                  checked={m.include}
-                  onChange={e => setDetectedMaterials(prev => prev.map((x, xi) => xi === i ? { ...x, include: e.target.checked } : x))}
-                  className="w-4 h-4 accent-primary"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{m.name}</p>
+          <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+            {detectedMaterials.map((m, i) => {
+              const upd = (field, val) => setDetectedMaterials(prev => prev.map((x, xi) => xi === i ? { ...x, [field]: val } : x));
+              return (
+                <div key={i} className={`border rounded-lg p-3 transition-opacity ${!m.include ? "opacity-50" : ""}`}>
+                  <div className="flex items-start gap-2 mb-2">
+                    <input
+                      type="checkbox"
+                      checked={m.include}
+                      onChange={e => upd("include", e.target.checked)}
+                      className="w-4 h-4 accent-primary mt-0.5 shrink-0"
+                    />
+                    <Input
+                      value={m.name}
+                      onChange={e => upd("name", e.target.value)}
+                      className="h-7 text-sm font-medium flex-1"
+                      placeholder="Material name"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 ml-6">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Model / SKU</p>
+                      <Input value={m.model_number} onChange={e => upd("model_number", e.target.value)} className="h-7 text-xs" placeholder="e.g. ABC-123" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Dimensions</p>
+                      <Input value={m.dimensions} onChange={e => upd("dimensions", e.target.value)} className="h-7 text-xs" placeholder="e.g. 1m x 5m" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Unit</p>
+                      <Select value={m.unit} onValueChange={v => upd("unit", v)}>
+                        <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {["each","sq_ft","bundle","roll","gallon","box","sheet","linear_ft","square","bag","tube"].map(u => (
+                            <SelectItem key={u} value={u} className="text-xs">{u.replace("_"," ")}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Unit Price (€)</p>
+                      <Input type="number" step="0.01" placeholder="0.00" value={m.unit_price} onChange={e => upd("unit_price", e.target.value)} className="h-7 text-xs" />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Select value={m.unit} onValueChange={v => setDetectedMaterials(prev => prev.map((x, xi) => xi === i ? { ...x, unit: v } : x))}>
-                    <SelectTrigger className="w-24 h-7 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["each","sq_ft","bundle","roll","gallon","box","sheet","linear_ft","square","bag","tube"].map(u => (
-                        <SelectItem key={u} value={u} className="text-xs">{u.replace("_"," ")}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number" step="0.01" placeholder="Price"
-                    value={m.unit_price}
-                    onChange={e => setDetectedMaterials(prev => prev.map((x, xi) => xi === i ? { ...x, unit_price: e.target.value } : x))}
-                    className="w-20 h-7 text-xs"
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setAddingMaterials(false); setDetectedMaterials([]); }}>Skip</Button>
