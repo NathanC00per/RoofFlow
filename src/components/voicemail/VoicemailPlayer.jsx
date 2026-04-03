@@ -54,14 +54,19 @@ export default function VoicemailPlayer({ voicemail, onClose, onStatusChange }) 
     };
   }, []);
 
-  const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
+  const togglePlay = async () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      try {
+        await audioRef.current.play();
+        setIsPlaying(true);
+      } catch (err) {
+        console.warn("Audio playback failed:", err.message);
+        setIsPlaying(false);
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -108,7 +113,12 @@ export default function VoicemailPlayer({ voicemail, onClose, onStatusChange }) 
                   </div>
                 </div>
               </div>
-              <audio ref={audioRef} src={voicemail?.audio_url} />
+              <audio ref={audioRef} src={voicemail?.audio_url} preload="metadata" crossOrigin="anonymous" />
+              {voicemail?.audio_url && (
+                <a href={voicemail.audio_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
+                  Open recording in new tab
+                </a>
+              )}
             </CardContent>
           </Card>
 
@@ -125,7 +135,7 @@ export default function VoicemailPlayer({ voicemail, onClose, onStatusChange }) 
             <div>
               <p className="text-muted-foreground">Received</p>
               <p className="font-semibold">
-                {format(new Date(voicemail?.received_at), "MMM d, h:mm a")}
+                {voicemail?.received_at ? format(new Date(voicemail.received_at), "MMM d, h:mm a") : "—"}
               </p>
             </div>
             <div>
