@@ -45,10 +45,12 @@ export default function VoicemailPlayer({ voicemail, onClose, onStatusChange }) 
         const blob = new Blob([bytes], { type: contentType || 'audio/mpeg' });
         const url = URL.createObjectURL(blob);
         setAudioSrc(url);
-        // Force the audio element to load the new src
-        if (audioRef.current) {
-          audioRef.current.load();
-        }
+        // Force the audio element to load the new src after React renders it
+        setTimeout(() => {
+          if (audioRef.current) {
+            audioRef.current.load();
+          }
+        }, 50);
       })
       .catch(err => {
         console.error('getTwilioRecording failed:', err);
