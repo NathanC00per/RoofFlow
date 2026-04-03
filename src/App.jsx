@@ -46,6 +46,7 @@ import ClientPortal from './pages/ClientPortal';
 import PhoneSettings from './pages/settings/PhoneSettings';
 import CommunicationLogs from './pages/CommunicationLogs';
 import Voicemails from './pages/Voicemails';
+import CallCenter from './pages/CallCenter';
 import WebsiteLayout from './pages/website/WebsiteLayout';
 import WebsiteHome from './pages/website/WebsiteHome';
 import WebsiteServices from './pages/website/WebsiteServices';
@@ -117,6 +118,7 @@ const AuthenticatedApp = () => {
         <Route path="/client-portal" element={<ClientPortal />} />
         <Route path="/communications" element={<CommunicationLogs />} />
         <Route path="/voicemails" element={<Voicemails />} />
+        <Route path="/call-center" element={<CallCenter />} />
       </Route>
       <Route path="/customer" element={<CustomerPortal />} />
       {/* Public website */}

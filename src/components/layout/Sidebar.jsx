@@ -29,7 +29,8 @@ import {
   Globe,
   Megaphone,
   Phone,
-  PhoneCall
+  PhoneCall,
+  Headphones
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ const ALL_NAV_GROUPS = [
       { label: "All Jobs",    path: "/jobs",           icon: Briefcase,       perm: "jobs.view" },
       { label: "Maintenance", path: "/maintenance",    icon: Wrench,          perm: "maintenance.view" },
       { label: "Communications", path: "/communications", icon: PhoneCall,    perm: null },
+      { label: "Call Center",    path: "/call-center",    icon: Headphones,   perm: null },
     ]
   },
   {
