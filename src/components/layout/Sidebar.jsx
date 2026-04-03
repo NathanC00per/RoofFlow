@@ -105,9 +105,9 @@ const ALL_NAV_GROUPS = [
   }
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ collapsed: initialCollapsed = false }) {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   const { can, isAdmin } = usePermissions();
 
   const navGroups = ALL_NAV_GROUPS.map(group => ({

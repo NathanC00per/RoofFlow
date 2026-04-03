@@ -62,9 +62,9 @@ export default function MobileNav() {
 
       {/* More drawer */}
       {moreOpen && (
-        <div className="fixed bottom-20 md:bottom-24 left-0 right-0 z-50 bg-background rounded-t-2xl border-t shadow-2xl max-h-[75vh] overflow-y-auto">
+        <div className="fixed bottom-20 left-0 right-0 z-50 bg-background rounded-t-2xl border-t shadow-2xl max-h-[75vh] overflow-y-auto">
           <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-4 mb-5" />
-          <div className="grid grid-cols-4 md:grid-cols-5 gap-2 px-4 pb-safe pb-6">
+          <div className="grid grid-cols-4 gap-2 px-4 pb-safe pb-6">
             {visibleMore.map(item => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
@@ -78,8 +78,8 @@ export default function MobileNav() {
                     isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <Icon className="w-6 h-6 md:w-7 md:h-7" />
-                  <span className="text-xs md:text-sm font-medium leading-tight">{item.label}</span>
+                  <Icon className="w-6 h-6" />
+                  <span className="text-xs font-medium leading-tight">{item.label}</span>
                 </Link>
               );
             })}
@@ -92,7 +92,7 @@ export default function MobileNav() {
         className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur-md"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="flex items-stretch h-20 md:h-24">
+        <div className="flex items-stretch h-20">
           {visibleTabs.map(tab => {
             const Icon = tab.icon;
             const isMore = tab.path === "__more__";
@@ -110,10 +110,10 @@ export default function MobileNav() {
                     isActive ? "text-primary" : "text-muted-foreground"
                   )}
                 >
-                  <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center transition-all", isActive ? "bg-primary text-white" : "")}>
-                    <Icon className="w-6 h-6 md:w-7 md:h-7" />
+                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all", isActive ? "bg-primary text-white" : "")}>
+                    <Icon className="w-6 h-6" />
                   </div>
-                  <span className="text-xs md:text-sm font-medium">{tab.label}</span>
+                  <span className="text-xs font-medium">{tab.label}</span>
                 </button>
               );
             }
@@ -129,12 +129,12 @@ export default function MobileNav() {
                 )}
               >
                 <div className={cn(
-                  "w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center transition-all",
+                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
                   isActive ? "bg-primary text-white scale-110" : ""
                 )}>
-                  <Icon className="w-6 h-6 md:w-7 md:h-7" />
+                  <Icon className="w-6 h-6" />
                 </div>
-                <span className="text-xs md:text-sm font-medium">{tab.label}</span>
+                <span className="text-xs font-medium">{tab.label}</span>
               </Link>
             );
           })}
