@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
   const params = new URLSearchParams(bodyText);
   const digit = params.get('Digits') || '';
   const appId = Deno.env.get('BASE44_APP_ID');
-  const baseUrl = `https://${appId}.base44.app`;
+  const baseUrl = `https://${appId}.base44.app/api/apps/${appId}`;
 
   console.log(`Voicemail choice: digit="${digit}"`);
 

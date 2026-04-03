@@ -513,7 +513,7 @@ export default function PhoneSettings() {
           <div className="flex-1 text-sm">
             <p className="font-semibold text-emerald-900">Twilio Connected</p>
             <p className="text-emerald-700 text-xs mt-0.5">
-              Point your Twilio number's webhook to: <code className="font-mono bg-emerald-100 px-1 rounded">https://{"{APP_ID}"}.base44.app/functions/handleIncomingCall</code>
+              Point your Twilio number's webhook to: <code className="font-mono bg-emerald-100 px-1 rounded text-[10px] break-all">https://69c5eb4003825e02f32c8e2c.base44.app/api/apps/69c5eb4003825e02f32c8e2c/functions/handleIncomingCall</code>
             </p>
           </div>
           {missingNumbers.length > 0 && (

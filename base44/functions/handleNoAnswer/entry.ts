@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('handleNoAnswer error:', error.message);
     const appId = Deno.env.get('BASE44_APP_ID');
-    const baseUrl = `https://${appId}.base44.app`;
+    const baseUrl = `https://${appId}.base44.app/api/apps/${appId}`;
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     twiml += '<Say voice="alice">No one is available. Please leave a message after the tone.</Say>';
     twiml += `<Record maxLength="120" action="${baseUrl}/functions/handleVoicemail" transcribe="false" playBeep="true" />`;

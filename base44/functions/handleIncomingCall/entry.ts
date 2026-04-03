@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     if (activeIvr && activeIvr.menu_options && activeIvr.menu_options.length > 0) {
       // Build IVR menu
       const appId = Deno.env.get('BASE44_APP_ID');
-      const baseUrl = `https://${appId}.base44.app`;
+      const baseUrl = `https://${appId}.base44.app/api/apps/${appId}`;
       
       let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
       twiml += `<Gather numDigits="1" timeout="${activeIvr.timeout_seconds || 5}" action="${baseUrl}/functions/handleIVRKeypress" method="POST">`;
@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     const employees = await base44.asServiceRole.entities.Employee.filter({ status: 'active' });
 
     const appId = Deno.env.get('BASE44_APP_ID');
-    const baseUrl = `https://${appId}.base44.app`;
+    const baseUrl = `https://${appId}.base44.app/api/apps/${appId}`;
 
     // Find phone numbers to dial from routes
     const dialNumbers = getDialNumbers(routes, employees);
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error handling incoming call:', error.message, error.stack);
     const appId = Deno.env.get('BASE44_APP_ID');
-    const baseUrl = `https://${appId}.base44.app`;
+    const baseUrl = `https://${appId}.base44.app/api/apps/${appId}`;
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     twiml += '<Say voice="alice">Thank you for calling. We are unable to take your call right now.</Say>';
     twiml += voicemailTwiml(baseUrl);

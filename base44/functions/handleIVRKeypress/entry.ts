@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const fromPhone = params.get('From') || 'Unknown';
     
     const appId = Deno.env.get('BASE44_APP_ID');
-    const baseUrl = `https://${appId}.base44.app`;
+    const baseUrl = `https://${appId}.base44.app/api/apps/${appId}`;
 
     console.log(`IVR keypress: digit="${digit}" from=${fromPhone}`);
 
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error handling IVR keypress:', error.message, error.stack);
     const appId = Deno.env.get('BASE44_APP_ID');
-    return voicemailResponse(`https://${appId}.base44.app`);
+    return voicemailResponse(`https://${appId}.base44.app/api/apps/${appId}`);
   }
 });
 
