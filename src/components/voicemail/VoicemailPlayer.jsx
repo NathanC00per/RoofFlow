@@ -34,8 +34,11 @@ export default function VoicemailPlayer({ voicemail, onClose, onStatusChange }) 
     if (!voicemail?.audio_url) return;
     base44.functions.invoke('getTwilioRecording', { recording_url: voicemail.audio_url })
       .then(res => {
-        // res.data is an ArrayBuffer — create a blob URL
-        const blob = new Blob([res.data], { type: 'audio/mpeg' });
+        const { base64, contentType } = res.data;
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: contentType || 'audio/mpeg' });
         setAudioSrc(URL.createObjectURL(blob));
       })
       .catch(() => setAudioError(true));

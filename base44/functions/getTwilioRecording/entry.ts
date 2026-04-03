@@ -38,13 +38,14 @@ Deno.serve(async (req) => {
 
     const contentType = twilioRes.headers.get('Content-Type') || 'audio/mpeg';
     const audioBuffer = await twilioRes.arrayBuffer();
+    const bytes = new Uint8Array(audioBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    const base64 = btoa(binary);
 
-    return new Response(audioBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'private, max-age=3600',
-      },
+    return Response.json({
+      base64,
+      contentType,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
