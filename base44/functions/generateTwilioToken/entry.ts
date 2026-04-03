@@ -10,11 +10,15 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID')?.trim();
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN')?.trim();
+    const apiKeySid = Deno.env.get('TWILIO_API_KEY_SID')?.trim();
+    const apiKeySecret = Deno.env.get('TWILIO_API_KEY_SECRET')?.trim();
     const twimlAppSid = Deno.env.get('TWILIO_TWIML_APP_SID')?.trim();
 
     if (!twimlAppSid) {
       return Response.json({ error: 'TWILIO_TWIML_APP_SID secret is not set. Please create a TwiML App in Twilio console and set this secret.' }, { status: 500 });
+    }
+    if (!apiKeySid || !apiKeySecret) {
+      return Response.json({ error: 'TWILIO_API_KEY_SID and TWILIO_API_KEY_SECRET are required.' }, { status: 500 });
     }
 
     const AccessToken = twilio.jwt.AccessToken;
@@ -23,7 +27,7 @@ Deno.serve(async (req) => {
     // Use email as the identity (sanitized)
     const identity = user.email.replace(/[^a-zA-Z0-9_\-@.]/g, '_');
 
-    const token = new AccessToken(accountSid, authToken, authToken, {
+    const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
       identity,
       ttl: 3600,
     });
