@@ -118,7 +118,7 @@ export function useCallCenter() {
       deviceRef.current = device;
     } catch (err) {
       console.error('Go online error:', err);
-      setError(err.message);
+      setError(err?.message || err?.toString() || 'Failed to connect. Check your Twilio credentials.');
       setDeviceState('error');
     }
   }, []);
