@@ -26,17 +26,27 @@ Deno.serve(async (req) => {
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const credentials = btoa(`${accountSid}:${authToken}`);
 
-    // Append .mp3 if not already present to get the audio file
+    // Append .mp3 if not already present
     const audioUrl = recording_url.match(/\.(mp3|wav|ogg)$/i) ? recording_url : `${recording_url}.mp3`;
 
-    const twilioRes = await fetch(audioUrl, {
-      headers: {
-        Authorization: `Basic ${credentials}`,
-      },
-    });
+    // Try the provided URL first; if 401, fall back to the standard US API URL
+    // (regional URLs sometimes require re-routing through the main API)
+    const urlsToTry = [
+      audioUrl,
+      audioUrl.replace('api.dublin.ie1.twilio.com', 'api.twilio.com'),
+    ];
 
-    if (!twilioRes.ok) {
-      return Response.json({ error: `Twilio returned ${twilioRes.status}` }, { status: 502 });
+    let twilioRes = null;
+    for (const url of urlsToTry) {
+      const res = await fetch(url, {
+        headers: { Authorization: `Basic ${credentials}` },
+      });
+      if (res.ok) { twilioRes = res; break; }
+      console.log(`Tried ${url} — got ${res.status}`);
+    }
+
+    if (!twilioRes) {
+      return Response.json({ error: 'Could not fetch recording from Twilio' }, { status: 502 });
     }
 
     const contentType = twilioRes.headers.get('Content-Type') || 'audio/mpeg';
