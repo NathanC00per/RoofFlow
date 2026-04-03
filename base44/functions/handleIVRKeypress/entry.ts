@@ -13,9 +13,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const base44 = createClientFromRequest(req);
     const bodyText = await req.text();
     const params = new URLSearchParams(bodyText);
+    const base44 = createClientFromRequest(req);
     const digit = params.get('Digits') || '';
     const fromPhone = params.get('From') || 'Unknown';
     
@@ -34,6 +34,15 @@ Deno.serve(async (req) => {
 
     const selectedOption = activeIvr.menu_options.find(opt => opt.digit === digit);
     if (!selectedOption || !selectedOption.route_id) {
+      // No digit pressed (timeout) or unrecognised — re-play menu once more then voicemail
+      if (!digit) {
+        console.log('No digit received (timeout) — offering voicemail');
+        let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
+        twiml += '<Say voice="alice">We did not receive your selection.</Say>';
+        twiml += voicemailTwiml(baseUrl);
+        twiml += '</Response>';
+        return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
+      }
       console.log(`No matching option for digit "${digit}"`);
       let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
       twiml += '<Say voice="alice">That option was not recognised.</Say>';

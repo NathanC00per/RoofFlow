@@ -15,9 +15,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const base44 = createClientFromRequest(req);
+    // Read body FIRST before SDK consumes the request
     const bodyText = await req.text();
     const params = new URLSearchParams(bodyText);
+    const base44 = createClientFromRequest(req);
     const fromPhone = params.get('From') || 'Unknown';
     const toPhone = params.get('To') || '';
     const callSid = params.get('CallSid') || '';

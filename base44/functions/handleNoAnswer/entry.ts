@@ -12,9 +12,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const base44 = createClientFromRequest(req);
     const bodyText = await req.text();
     const params = new URLSearchParams(bodyText);
+    const base44 = createClientFromRequest(req);
     const dialCallStatus = params.get('DialCallStatus') || '';
     const fromPhone = params.get('From') || 'Unknown';
 
@@ -24,9 +24,19 @@ Deno.serve(async (req) => {
     console.log(`handleNoAnswer: DialCallStatus=${dialCallStatus} from=${fromPhone}`);
 
     // If call was answered successfully, just hang up cleanly
-    if (dialCallStatus === 'completed') {
+    if (dialCallStatus === 'completed' || dialCallStatus === 'answered') {
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup /></Response>',
+        { status: 200, headers: { 'Content-Type': 'application/xml' } }
+      );
+    }
+
+    // If called with no DialCallStatus it means the <Record> finished (voicemail was left)
+    // or the call ended normally — just hang up
+    if (!dialCallStatus) {
+      console.log('handleNoAnswer called with no DialCallStatus — recording completed or call ended');
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="alice">Thank you. Goodbye.</Say></Response>',
         { status: 200, headers: { 'Content-Type': 'application/xml' } }
       );
     }
