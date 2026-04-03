@@ -9,7 +9,7 @@ import { JobStatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import PageHeader from "@/components/shared/PageHeader";
 import {
   Pencil, Trash2, MapPin, Phone, Mail, Calendar, DollarSign,
-  ArrowLeft, FileText, Link2, Printer, Wrench, CalendarDays
+  ArrowLeft, FileText, Link2, Printer, Wrench, CalendarDays, Zap
 } from "lucide-react";
 import JobsMap from "@/components/maps/JobsMap";
 import JobFinancials from "@/components/jobs/JobFinancials";
@@ -22,6 +22,7 @@ import JobPhotos from "@/components/jobs/JobPhotos";
 import JobPlanOfAction from "@/components/jobs/JobPlanOfAction";
 import AutoScheduleModal from "@/components/jobs/AutoScheduleModal";
 import RoofAreasDisplay from "@/components/jobs/RoofAreasDisplay";
+import RoofReportReview from "@/components/jobs/RoofReportReview";
 import { generateCrewSheetPDF } from "@/lib/generateCrewSheet";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -125,6 +126,28 @@ export default function JobDetail() {
   });
 
   const [showAutoSchedule, setShowAutoSchedule] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+
+  const { data: roofReports = [] } = useQuery({
+    queryKey: ["roofReports", jobId],
+    queryFn: () => base44.entities.RoofReport.filter({ job_id: jobId }),
+    enabled: !!jobId,
+  });
+
+  const generateReportMutation = useMutation({
+    mutationFn: async () => {
+      const res = await base44.functions.invoke('generateRoofReport', { job_id: jobId });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["roofReports", jobId] });
+      setSelectedReport(data.report);
+      toast.success("Report generated! Please review and approve.");
+    },
+    onError: () => {
+      toast.error("Failed to generate report");
+    }
+  });
 
   if (isLoading || !job) {
     return (
@@ -167,6 +190,15 @@ export default function JobDetail() {
         >
           <Printer className="w-4 h-4 mr-2" /> Crew Sheet
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => generateReportMutation.mutate()}
+          disabled={generateReportMutation.isPending}
+        >
+          <Zap className="w-4 h-4 mr-2" />
+          {generateReportMutation.isPending ? "Generating..." : "Generate Roof Report"}
+        </Button>
         <Select value={job.status} onValueChange={(v) => statusMutation.mutate(v)}>
           <SelectTrigger className="w-48">
             <SelectValue />
@@ -197,6 +229,13 @@ export default function JobDetail() {
           open={showAutoSchedule}
           onClose={() => setShowAutoSchedule(false)}
           job={job}
+        />
+      )}
+
+      {selectedReport && (
+        <RoofReportReview
+          report={selectedReport}
+          onClose={() => setSelectedReport(null)}
         />
       )}
 
@@ -340,6 +379,29 @@ export default function JobDetail() {
                   <span className="font-medium">{job.maintenance_contract_name || "View Contract"}</span>
                   <span className="text-xs text-muted-foreground">View →</span>
                 </a>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Roof Reports */}
+          {roofReports.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText className="w-4 h-4" />Roof Reports</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {roofReports.map(report => (
+                  <button
+                    key={report.id}
+                    onClick={() => setSelectedReport(report)}
+                    className="w-full flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/50 transition-colors text-sm text-left"
+                  >
+                    <span className="font-medium">Report #{report.id.slice(0, 8)}</span>
+                    <span className={`capitalize text-xs px-2 py-1 rounded ${
+                      report.status === 'approved' ? 'bg-green-100 text-green-700' :
+                      report.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>{report.status}</span>
+                  </button>
+                ))}
               </CardContent>
             </Card>
           )}

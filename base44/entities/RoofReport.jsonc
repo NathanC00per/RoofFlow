@@ -1,0 +1,91 @@
+{
+  "name": "RoofReport",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "description": "Reference to Job"
+    },
+    "job_customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "approved",
+        "rejected"
+      ],
+      "default": "draft",
+      "description": "Report approval status"
+    },
+    "ai_analysis": {
+      "type": "string",
+      "description": "AI-generated analysis and recommendations"
+    },
+    "recommended_solution": {
+      "type": "string",
+      "description": "Ideal solution recommended by AI"
+    },
+    "materials_needed": {
+      "type": "array",
+      "description": "List of materials required",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "estimated_cost": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "estimated_labor_cost": {
+      "type": "number",
+      "description": "Estimated labor cost for the job"
+    },
+    "estimated_material_cost": {
+      "type": "number",
+      "description": "Estimated material cost"
+    },
+    "total_estimated_cost": {
+      "type": "number",
+      "description": "Total estimated cost"
+    },
+    "timeline_estimate": {
+      "type": "string",
+      "description": "Estimated project timeline"
+    },
+    "reviewer_notes": {
+      "type": "string",
+      "description": "Notes from the person reviewing/approving the report"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Email of user who generated the report"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Email of user who approved it"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date the report was approved"
+    }
+  },
+  "required": [
+    "job_id",
+    "job_customer_name",
+    "ai_analysis"
+  ]
+}
