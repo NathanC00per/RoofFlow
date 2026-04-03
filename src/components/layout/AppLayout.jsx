@@ -21,8 +21,8 @@ export default function AppLayout() {
   // Mobile: Bottom nav only
   if (isMobile) {
     return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <main className="flex-1 overflow-y-auto pt-4 pb-24 px-4">
+      <div className="relative flex flex-col min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto pb-24 px-4 pt-4">
           <div className="max-w-2xl mx-auto space-y-6">
             <Outlet />
           </div>
