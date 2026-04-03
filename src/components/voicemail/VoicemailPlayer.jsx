@@ -34,10 +34,8 @@ export default function VoicemailPlayer({ voicemail, onClose, onStatusChange }) 
     if (!voicemail?.audio_url) return;
     base44.functions.invoke('getTwilioRecording', { recording_url: voicemail.audio_url })
       .then(res => {
-        console.log('getTwilioRecording response:', res.data);
         const { base64, contentType } = res.data;
         if (!base64) {
-          console.error('No base64 data in response');
           setAudioError(true);
           return;
         }
@@ -46,8 +44,11 @@ export default function VoicemailPlayer({ voicemail, onClose, onStatusChange }) 
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         const blob = new Blob([bytes], { type: contentType || 'audio/mpeg' });
         const url = URL.createObjectURL(blob);
-        console.log('Created blob URL:', url);
         setAudioSrc(url);
+        // Force the audio element to load the new src
+        if (audioRef.current) {
+          audioRef.current.load();
+        }
       })
       .catch(err => {
         console.error('getTwilioRecording failed:', err);
@@ -80,7 +81,7 @@ export default function VoicemailPlayer({ voicemail, onClose, onStatusChange }) 
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, []);
+  }, [audioSrc]);
 
   const togglePlay = async () => {
     if (!audioRef.current) return;
