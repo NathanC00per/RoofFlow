@@ -88,7 +88,13 @@ export function useCallCenter() {
 
       device.on('error', (err) => {
         console.error('Device error:', err);
-        setError(err.message || 'Device error');
+        const code = err?.code;
+        const msg = err?.message || err?.toString() || 'Device error';
+        if (code === 31204) {
+          setError(`JWT invalid (error 31204) — your Twilio API Key SID or Secret is incorrect. Please check TWILIO_API_KEY_SID and TWILIO_API_KEY_SECRET in your secrets.`);
+        } else {
+          setError(code ? `Error ${code}: ${msg}` : msg);
+        }
         setDeviceState('error');
       });
 
