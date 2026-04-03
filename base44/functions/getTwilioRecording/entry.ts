@@ -26,7 +26,10 @@ Deno.serve(async (req) => {
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const credentials = btoa(`${accountSid}:${authToken}`);
 
-    const twilioRes = await fetch(recording_url, {
+    // Append .mp3 if not already present to get the audio file
+    const audioUrl = recording_url.match(/\.(mp3|wav|ogg)$/i) ? recording_url : `${recording_url}.mp3`;
+
+    const twilioRes = await fetch(audioUrl, {
       headers: {
         Authorization: `Basic ${credentials}`,
       },
