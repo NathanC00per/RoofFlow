@@ -1,5 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
+/**
+ * handleIVRKeypress
+ * 
+ * Receives the digit pressed by caller, looks up the route, 
+ * dials the assigned employees' phones simultaneously.
+ * If no answer → voicemail offer.
+ */
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
@@ -8,49 +15,46 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const bodyText = await req.text();
-    const contentType = req.headers.get('content-type') || '';
-    const urlParams = new URL(req.url).searchParams;
+    const params = new URLSearchParams(bodyText);
+    const digit = params.get('Digits') || '';
+    const fromPhone = params.get('From') || 'Unknown';
+    
+    const appId = Deno.env.get('BASE44_APP_ID');
+    const baseUrl = `https://${appId}.base44.app`;
 
-    console.log(`Content-Type: ${contentType}`);
-    console.log(`Raw body: ${bodyText}`);
-
-    let digit, fromPhone;
-
-    if (contentType.includes('application/json')) {
-      const json = JSON.parse(bodyText || '{}');
-      digit = json.Digits;
-      fromPhone = json.From;
-    } else {
-      const bodyParams = new URLSearchParams(bodyText);
-      digit = bodyParams.get('Digits') || urlParams.get('Digits');
-      fromPhone = bodyParams.get('From') || urlParams.get('From');
-    }
-
-    console.log(`IVR keypress: digit=${digit} from=${fromPhone}`);
+    console.log(`IVR keypress: digit="${digit}" from=${fromPhone}`);
 
     const ivrConfigs = await base44.asServiceRole.entities.IVRConfig.list();
     const activeIvr = ivrConfigs.find(ivr => ivr.is_active) || ivrConfigs[0];
 
     if (!activeIvr) {
-      console.log('No active IVR, going to voicemail');
-      return voicemailResponse();
+      console.log('No active IVR found');
+      return voicemailResponse(baseUrl);
     }
 
     const selectedOption = activeIvr.menu_options.find(opt => opt.digit === digit);
-    console.log(`Selected option: ${JSON.stringify(selectedOption)}`);
-
     if (!selectedOption || !selectedOption.route_id) {
-      console.log('No matching option, going to voicemail');
-      return voicemailResponse();
+      console.log(`No matching option for digit "${digit}"`);
+      let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
+      twiml += '<Say voice="alice">That option was not recognised.</Say>';
+      twiml += voicemailTwiml(baseUrl);
+      twiml += '</Response>';
+      return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
     }
 
     const route = await base44.asServiceRole.entities.PhoneRouting.get(selectedOption.route_id);
-    console.log(`Route found: ${route?.description}, forward_number: ${route?.forward_number}`);
+    if (!route) {
+      console.log('Route not found');
+      return voicemailResponse(baseUrl);
+    }
 
-    const isOpen = isWithinBusinessHours(route.business_hours);
-    console.log(`Business hours open: ${isOpen}`);
+    console.log(`Route: ${route.description}, type: ${route.routing_type}`);
 
-    // Log call in background
+    // Get dial numbers for this specific route
+    const employees = await base44.asServiceRole.entities.Employee.filter({ status: 'active' });
+    const dialNumbers = getRouteNumbers(route, employees);
+
+    // Log the routing
     base44.asServiceRole.entities.CommunicationLog.create({
       type: 'call',
       direction: 'incoming',
@@ -58,56 +62,68 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString(),
       status: 'completed',
       routed_to_role: route.routing_type === 'role' ? route.target_role : undefined,
-      notes: `Routed via IVR option ${digit} - ${selectedOption.label}`,
+      notes: `IVR option ${digit} (${selectedOption.label}) → ${route.description}`,
     }).catch(e => console.error('Log error:', e.message));
 
-    if (!isOpen) {
+    if (dialNumbers.length === 0) {
+      console.log(`No phone numbers for route ${route.description}`);
       let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
-      twiml += '<Say>We are currently closed. Please leave a message and we will get back to you.</Say>';
-      twiml += `<Record maxLength="120" action="${baseUrl()}/functions/handleVoicemail" />`;
+      twiml += `<Say voice="alice">Connecting you to ${escapeXml(selectedOption.label)}. Please hold.</Say>`;
+      twiml += voicemailTwiml(baseUrl);
       twiml += '</Response>';
       return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
     }
 
-    if (route.forward_number) {
-      let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
-      twiml += `<Dial timeout="${route.ring_timeout || 30}">${escapeXml(route.forward_number)}</Dial>`;
-      twiml += '<Say>The line is busy or did not answer. Please leave a message.</Say>';
-      twiml += `<Record maxLength="120" action="${baseUrl()}/functions/handleVoicemail" />`;
-      twiml += '</Response>';
-      return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
+    const ringTimeout = route.ring_timeout || 30;
+    let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
+    twiml += `<Say voice="alice">Please hold while we connect you to ${escapeXml(selectedOption.label)}.</Say>`;
+    twiml += `<Dial timeout="${ringTimeout}" action="${baseUrl}/functions/handleNoAnswer" method="POST">`;
+    for (const num of dialNumbers) {
+      twiml += `<Number>${escapeXml(num)}</Number>`;
     }
+    twiml += '</Dial>';
+    twiml += '</Response>';
 
-    console.log('No forward_number on route, going to voicemail');
-    return voicemailResponse();
+    return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
 
   } catch (error) {
     console.error('Error handling IVR keypress:', error.message, error.stack);
-    return voicemailResponse();
+    const appId = Deno.env.get('BASE44_APP_ID');
+    return voicemailResponse(`https://${appId}.base44.app`);
   }
 });
 
-function baseUrl() {
-  return `https://${Deno.env.get('BASE44_APP_ID')}.base44.app`;
+function getRouteNumbers(route, employees) {
+  const numbers = [];
+  if (route.routing_type === 'employee' && route.target_employee_ids?.length) {
+    for (const empId of route.target_employee_ids) {
+      const emp = employees.find(e => e.id === empId);
+      if (emp?.phone) numbers.push(emp.phone);
+    }
+  } else if (route.routing_type === 'role' && route.target_role) {
+    for (const emp of employees) {
+      if (emp.role === route.target_role && emp.phone) numbers.push(emp.phone);
+    }
+  } else if (route.routing_type === 'round_robin') {
+    for (const emp of employees) {
+      if (emp.phone) numbers.push(emp.phone);
+    }
+  }
+  if (route.forward_number) numbers.push(route.forward_number);
+  return numbers;
 }
 
-function voicemailResponse() {
+function voicemailResponse(baseUrl) {
   let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
-  twiml += '<Say>Thank you. Please leave a message after the tone.</Say>';
-  twiml += `<Record maxLength="120" action="${baseUrl()}/functions/handleVoicemail" />`;
+  twiml += voicemailTwiml(baseUrl);
   twiml += '</Response>';
   return new Response(twiml, { status: 200, headers: { 'Content-Type': 'application/xml' } });
 }
 
-function isWithinBusinessHours(businessHours) {
-  if (!businessHours) return true;
-  const now = new Date();
-  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const dayName = dayNames[now.getDay()];
-  const dayHours = businessHours[dayName];
-  if (!dayHours || !dayHours.enabled) return false;
-  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  return currentTime >= dayHours.start_time && currentTime <= dayHours.end_time;
+function voicemailTwiml(baseUrl) {
+  let out = `<Say voice="alice">No one is available to take your call. Please leave a message after the tone and we will get back to you as soon as possible.</Say>`;
+  out += `<Record maxLength="120" action="${baseUrl}/functions/handleVoicemail" transcribe="false" playBeep="true" />`;
+  return out;
 }
 
 function escapeXml(str) {
