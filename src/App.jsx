@@ -27,6 +27,7 @@ import CustomerPortal from './pages/customer/CustomerPortal';
 import CustomersList from './pages/customers/CustomersList';
 import CustomerDetail from './pages/customers/CustomerDetail';
 import Expenses from './pages/finance/Expenses';
+import StatisticalAnalysis from './pages/analytics/StatisticalAnalysis';
 import Templates from './pages/settings/Templates';
 import CompanySettings from './pages/settings/CompanySettings';
 import VatTracker from './pages/settings/VatTracker';
@@ -97,6 +98,7 @@ const AuthenticatedApp = () => {
         <Route path="/customers" element={<CustomersList />} />
         <Route path="/customers/:id" element={<CustomerDetail />} />
         <Route path="/expenses" element={<Expenses />} />
+        <Route path="/analytics" element={<StatisticalAnalysis />} />
         <Route path="/settings/templates" element={<Templates />} />
         <Route path="/settings/company" element={<CompanySettings />} />
         <Route path="/settings/vat" element={<VatTracker />} />

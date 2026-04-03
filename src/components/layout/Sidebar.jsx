@@ -61,6 +61,7 @@ const ALL_NAV_GROUPS = [
     label: "Finance",
     items: [
       { label: "Finance Dashboard", path: "/finance",    icon: BarChart2, perm: "finance.view" },
+      { label: "Statistical Analysis", path: "/analytics", icon: BarChart2, perm: "finance.view" },
       { label: "Estimates",         path: "/estimates",  icon: FileText,  perm: "estimates.view" },
       { label: "Invoices",          path: "/invoices",   icon: Receipt,   perm: "invoices.view" },
       { label: "Expenses",          path: "/expenses",   icon: Wallet,    perm: "expenses.view" },

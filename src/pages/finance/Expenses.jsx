@@ -49,13 +49,14 @@ function normaliseUnit(raw) {
   return UNITS.find(v => lower.includes(v.replace("_", " ")) || lower.includes(v)) || "each";
 }
 
-function makeMaterialItem(item) {
+function makeMaterialItem(item, vendor) {
   return {
     name: item.name || "",
     model_number: item.model_number || "",
     dimensions: item.dimensions || "",
     unit: normaliseUnit(item.unit),
     unit_price: item.unit_price ? String(item.unit_price) : "",
+    supplier: vendor || "",
     status: "pending",
     editing: false,
   };
@@ -250,7 +251,8 @@ export default function Expenses() {
         };
       }));
       if (result?.line_items?.length) {
-        setPendingLineItems(prev => [...prev, ...result.line_items]);
+        const vendor = result?.vendor || "";
+        setPendingLineItems(prev => [...prev, ...result.line_items.map(li => ({ ...li, _vendor: vendor }))]);
       }
     } catch {
       setEntries(prev => prev.map(e => e.id === entryId ? { ...e, scanning: false } : e));
@@ -277,12 +279,44 @@ export default function Expenses() {
   // ─── Material detection ───────────────────────────────────────────────────
   async function detectNewMaterials(lineItems) {
     try {
-      const existingNames = materials.map(m => m.name.toLowerCase());
-      const candidates = lineItems.map(makeMaterialItem);
-      const newItems = candidates.filter(c =>
-        c.name && !existingNames.some(e => e.includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(e))
-      );
-      if (newItems.length > 0) { setDetectedMaterials(newItems); setAddingMaterials(true); }
+      const detected = [];
+      for (const item of lineItems) {
+        if (!item.name) continue;
+        const vendor = item._vendor || "";
+        const nameLower = item.name.toLowerCase();
+        const existingMatch = materials.find(m =>
+          m.name.toLowerCase().includes(nameLower) || nameLower.includes(m.name.toLowerCase())
+        );
+        if (!existingMatch) {
+          // Brand new material
+          detected.push({ ...makeMaterialItem(item, vendor), isNew: true, existingMaterial: null });
+        } else {
+          // Exists but check if from a different supplier with a different price
+          const existingSupplier = (existingMatch.supplier || "").toLowerCase();
+          const newSupplier = vendor.toLowerCase();
+          const existingPrice = existingMatch.unit_cost || existingMatch.unit_price || 0;
+          const newPrice = item.unit_price || 0;
+          if (newSupplier && existingSupplier !== newSupplier && newPrice > 0) {
+            detected.push({
+              ...makeMaterialItem(item, vendor),
+              isNew: false,
+              existingMaterial: {
+                id: existingMatch.id, name: existingMatch.name,
+                supplier: existingMatch.supplier || "—", price: existingPrice,
+              }
+            });
+          }
+        }
+      }
+      // Deduplicate by name+supplier
+      const seen = new Set();
+      const unique = detected.filter(d => {
+        const key = `${d.name.toLowerCase()}|${d.supplier.toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      if (unique.length > 0) { setDetectedMaterials(unique); setAddingMaterials(true); }
     } catch { /* non-critical */ }
   }
 
@@ -293,9 +327,14 @@ export default function Expenses() {
     try {
       await Promise.all(toAdd.map(m =>
         base44.entities.Material.create({
-          name: m.name, sku: m.model_number || undefined, description: m.dimensions || undefined,
-          unit: m.unit || "each", unit_price: parseFloat(m.unit_price) || 0,
-          unit_cost: parseFloat(m.unit_price) || 0, is_active: true,
+          name: m.name,
+          sku: m.model_number || undefined,
+          description: m.dimensions || undefined,
+          unit: m.unit || "each",
+          unit_price: parseFloat(m.unit_price) || 0,
+          unit_cost: parseFloat(m.unit_price) || 0,
+          supplier: m.supplier || undefined,
+          is_active: true,
         })
       ));
       queryClient.invalidateQueries({ queryKey: ["materials"] });
@@ -562,9 +601,12 @@ export default function Expenses() {
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <PackagePlus className="w-4 h-4 text-primary" /> New Materials Detected
+              <PackagePlus className="w-4 h-4 text-primary" /> Materials Detected from Receipts
             </DialogTitle>
-            <p className="text-sm text-muted-foreground">{detectedMaterials.length} item{detectedMaterials.length !== 1 ? "s" : ""} not in your catalogue.</p>
+            <div className="flex gap-3 text-xs mt-1">
+              <span className="text-muted-foreground">{detectedMaterials.filter(m => m.isNew).length} new items</span>
+              <span className="text-amber-600">{detectedMaterials.filter(m => !m.isNew).length} alternative supplier prices</span>
+            </div>
           </DialogHeader>
           <div className="flex items-center justify-between px-1 pb-1 border-b">
             <button onClick={toggleSelectAllMaterials} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -701,9 +743,20 @@ function MaterialReviewRow({ material: m, onChange }) {
   const isAccepted = m.status === "accepted";
   const isRejected = m.status === "rejected";
   const isEditing = m.editing;
+  const existing = m.existingMaterial;
+  const newPrice = parseFloat(m.unit_price) || 0;
+  const existingPrice = existing?.price || 0;
+  const priceDiff = existing && newPrice > 0 && existingPrice > 0
+    ? ((newPrice - existingPrice) / existingPrice) * 100 : null;
 
   return (
-    <div className={cn("border rounded-lg p-3 transition-all", isAccepted && "border-emerald-300 bg-emerald-50/50", isRejected && "border-red-200 bg-red-50/40 opacity-60", !isAccepted && !isRejected && "border-border")}>
+    <div className={cn("border rounded-lg p-3 transition-all",
+      isAccepted && "border-emerald-300 bg-emerald-50/50",
+      isRejected && "border-red-200 bg-red-50/40 opacity-60",
+      !isAccepted && !isRejected && !existing && "border-border",
+      !isRejected && existing && "border-amber-300 bg-amber-50/40"
+    )}>
+      {/* Header row */}
       <div className="flex items-center gap-2">
         <div className="flex gap-1 shrink-0">
           <button title="Accept" onClick={() => onChange("status", isAccepted ? "pending" : "accepted")}
@@ -715,41 +768,74 @@ function MaterialReviewRow({ material: m, onChange }) {
             <XCircle className="w-3.5 h-3.5" />
           </button>
         </div>
-        {isEditing
-          ? <Input value={m.name} onChange={e => onChange("name", e.target.value)} className="h-7 text-sm font-medium flex-1" placeholder="Material name" autoFocus />
-          : <span className={cn("flex-1 text-sm font-medium truncate", isRejected && "line-through text-muted-foreground")}>{m.name || <span className="italic text-muted-foreground">Unnamed</span>}</span>
-        }
+        <div className="flex-1 min-w-0">
+          {isEditing
+            ? <Input value={m.name} onChange={e => onChange("name", e.target.value)} className="h-7 text-sm font-medium" placeholder="Material name" autoFocus />
+            : <span className={cn("text-sm font-medium truncate block", isRejected && "line-through text-muted-foreground")}>{m.name || <span className="italic text-muted-foreground">Unnamed</span>}</span>
+          }
+          {existing && !isRejected && (
+            <p className="text-[10px] text-amber-700 mt-0.5">
+              Already in catalogue (from {existing.supplier}) — adding as alternative supplier price
+            </p>
+          )}
+          {!existing && !isRejected && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">New item — not yet in catalogue</p>
+          )}
+        </div>
         <button onClick={() => onChange("editing", !isEditing)} className="w-7 h-7 rounded-md border flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors shrink-0">
           {isEditing ? <Check className="w-3.5 h-3.5 text-primary" /> : <Pencil className="w-3 h-3" />}
         </button>
       </div>
+
       {!isRejected && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 ml-16">
-          <div>
-            <p className="text-[10px] text-muted-foreground mb-0.5">Model / SKU</p>
-            {isEditing ? <Input value={m.model_number} onChange={e => onChange("model_number", e.target.value)} className="h-6 text-xs" placeholder="ABC-123" />
-              : <p className="text-xs truncate">{m.model_number || <span className="text-muted-foreground/60">—</span>}</p>}
+        <>
+          {/* Price comparison banner */}
+          {existing && priceDiff !== null && (
+            <div className={cn("mt-2 ml-16 flex items-center gap-3 text-xs rounded-md px-2 py-1.5",
+              priceDiff < 0 ? "bg-emerald-100 text-emerald-700" : priceDiff > 0 ? "bg-red-100 text-red-700" : "bg-muted text-muted-foreground"
+            )}>
+              <span>Existing: <strong>€{existingPrice.toFixed(2)}</strong> @ {existing.supplier}</span>
+              <span>→</span>
+              <span>This receipt: <strong>€{newPrice.toFixed(2)}</strong> @ {m.supplier || "—"}</span>
+              <span className="ml-auto font-semibold">
+                {priceDiff < 0 ? `▼ ${Math.abs(priceDiff).toFixed(1)}% cheaper` : priceDiff > 0 ? `▲ ${priceDiff.toFixed(1)}% more expensive` : "Same price"}
+              </span>
+            </div>
+          )}
+
+          {/* Fields grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 ml-16">
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-0.5">Supplier</p>
+              {isEditing ? <Input value={m.supplier} onChange={e => onChange("supplier", e.target.value)} className="h-6 text-xs" placeholder="Supplier name" />
+                : <p className="text-xs font-medium truncate">{m.supplier || <span className="text-muted-foreground/60">—</span>}</p>}
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-0.5">Unit Price (€)</p>
+              {isEditing ? <Input type="number" step="0.01" placeholder="0.00" value={m.unit_price} onChange={e => onChange("unit_price", e.target.value)} className="h-6 text-xs" />
+                : <p className="text-xs font-medium">{m.unit_price ? `€${newPrice.toFixed(2)}` : <span className="text-muted-foreground/60">—</span>}</p>}
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-0.5">Unit</p>
+              {isEditing
+                ? <Select value={m.unit} onValueChange={v => onChange("unit", v)}>
+                    <SelectTrigger className="h-6 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u} className="text-xs">{u.replace("_", " ")}</SelectItem>)}</SelectContent>
+                  </Select>
+                : <p className="text-xs">{m.unit?.replace("_", " ")}</p>}
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-0.5">Model / SKU</p>
+              {isEditing ? <Input value={m.model_number} onChange={e => onChange("model_number", e.target.value)} className="h-6 text-xs" placeholder="ABC-123" />
+                : <p className="text-xs truncate">{m.model_number || <span className="text-muted-foreground/60">—</span>}</p>}
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-0.5">Dimensions</p>
+              {isEditing ? <Input value={m.dimensions} onChange={e => onChange("dimensions", e.target.value)} className="h-6 text-xs" placeholder="e.g. 1m×5m" />
+                : <p className="text-xs truncate">{m.dimensions || <span className="text-muted-foreground/60">—</span>}</p>}
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground mb-0.5">Dimensions</p>
-            {isEditing ? <Input value={m.dimensions} onChange={e => onChange("dimensions", e.target.value)} className="h-6 text-xs" placeholder="e.g. 1m×5m" />
-              : <p className="text-xs truncate">{m.dimensions || <span className="text-muted-foreground/60">—</span>}</p>}
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground mb-0.5">Unit</p>
-            {isEditing
-              ? <Select value={m.unit} onValueChange={v => onChange("unit", v)}>
-                  <SelectTrigger className="h-6 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u} className="text-xs">{u.replace("_", " ")}</SelectItem>)}</SelectContent>
-                </Select>
-              : <p className="text-xs">{m.unit?.replace("_", " ")}</p>}
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground mb-0.5">Unit Price (€)</p>
-            {isEditing ? <Input type="number" step="0.01" placeholder="0.00" value={m.unit_price} onChange={e => onChange("unit_price", e.target.value)} className="h-6 text-xs" />
-              : <p className="text-xs font-medium">{m.unit_price ? `€${parseFloat(m.unit_price).toFixed(2)}` : <span className="text-muted-foreground/60">—</span>}</p>}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
