@@ -64,6 +64,23 @@ Provide a JSON array with objects: {name, quantity, unit}. Only respond with the
       add_context_from_internet: false
     });
 
+    // Use existing line items as basis for costs
+    let estimatedMaterialCost = 0;
+    let estimatedLaborCost = 0;
+    
+    if (job.line_items && job.line_items.length > 0) {
+      job.line_items.forEach(item => {
+        if (item.type === 'material') {
+          estimatedMaterialCost += item.total || 0;
+        } else if (item.type === 'labor') {
+          estimatedLaborCost += item.total || 0;
+        }
+      });
+    }
+
+    const totalEstimatedCost = estimatedMaterialCost + estimatedLaborCost;
+
+    // Parse AI materials for display
     let materialsNeeded = [];
     try {
       materialsNeeded = JSON.parse(materialsResponse);
@@ -72,21 +89,11 @@ Provide a JSON array with objects: {name, quantity, unit}. Only respond with the
       materialsNeeded = [];
     }
 
-    // Calculate estimated costs
-    let totalMaterialCost = 0;
-    const enrichedMaterials = materialsNeeded.map(mat => {
-      const dbMaterial = materials.find(m => m.name.toLowerCase() === mat.name.toLowerCase());
-      const unitPrice = dbMaterial?.unit_price || 50;
-      const estimatedCost = (mat.quantity || 0) * unitPrice;
-      totalMaterialCost += estimatedCost;
-      return {
-        ...mat,
-        estimated_cost: estimatedCost
-      };
-    });
-
-    const estimatedLaborCost = (job.roof_area_sq_ft || 0) * 15; // $15 per sq ft estimate
-    const totalEstimatedCost = totalMaterialCost + estimatedLaborCost;
+    // Enrich materials with cost data
+    const enrichedMaterials = materialsNeeded.map(mat => ({
+      ...mat,
+      estimated_cost: (mat.quantity || 0) * 50 // Placeholder for display
+    }));
 
     // Create the roof report
     const report = await base44.asServiceRole.entities.RoofReport.create({
@@ -97,7 +104,7 @@ Provide a JSON array with objects: {name, quantity, unit}. Only respond with the
       recommended_solution: aiAnalysis.split('Recommended solution')[1]?.split('Estimated timeline')[0] || aiAnalysis,
       materials_needed: enrichedMaterials,
       estimated_labor_cost: estimatedLaborCost,
-      estimated_material_cost: totalMaterialCost,
+      estimated_material_cost: estimatedMaterialCost,
       total_estimated_cost: totalEstimatedCost,
       timeline_estimate: '5-7 business days',
       created_by: user.email
