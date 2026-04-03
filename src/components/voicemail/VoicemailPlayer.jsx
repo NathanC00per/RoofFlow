@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +27,19 @@ export default function VoicemailPlayer({ voicemail, onClose, onStatusChange }) 
   const [currentTime, setCurrentTime] = useState(0);
   const [notes, setNotes] = useState(voicemail?.notes || "");
   const [status, setStatus] = useState(voicemail?.status || "new");
+  const [audioSrc, setAudioSrc] = useState(null);
+  const [audioError, setAudioError] = useState(false);
+
+  useEffect(() => {
+    if (!voicemail?.audio_url) return;
+    base44.functions.invoke('getTwilioRecording', { recording_url: voicemail.audio_url })
+      .then(res => {
+        // res.data is an ArrayBuffer — create a blob URL
+        const blob = new Blob([res.data], { type: 'audio/mpeg' });
+        setAudioSrc(URL.createObjectURL(blob));
+      })
+      .catch(() => setAudioError(true));
+  }, [voicemail?.audio_url]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -113,12 +127,10 @@ export default function VoicemailPlayer({ voicemail, onClose, onStatusChange }) 
                   </div>
                 </div>
               </div>
-              <audio ref={audioRef} src={voicemail?.audio_url} preload="metadata" crossOrigin="anonymous" />
-              {voicemail?.audio_url && (
-                <a href={voicemail.audio_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
-                  Open recording in new tab
-                </a>
+              {audioError && (
+                <p className="text-xs text-destructive">Could not load audio. <a href={voicemail?.audio_url} target="_blank" rel="noopener noreferrer" className="underline">Open directly</a></p>
               )}
+              <audio ref={audioRef} src={audioSrc || undefined} preload="metadata" />
             </CardContent>
           </Card>
 
