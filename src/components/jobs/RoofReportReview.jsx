@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, X, Download } from "lucide-react";
+import { AlertCircle, CheckCircle2, X, Download, ChevronDown, MapPin, Hammer, DollarSign, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-export default function RoofReportReview({ report, onClose }) {
+export default function RoofReportReview({ report, job, onClose }) {
   const queryClient = useQueryClient();
   const [reviewerNotes, setReviewerNotes] = useState(report?.reviewer_notes || "");
+  const [expandedSections, setExpandedSections] = useState({ analysis: true, materials: true });
 
   const approveMutation = useMutation({
     mutationFn: async () => {
@@ -48,7 +48,7 @@ export default function RoofReportReview({ report, onClose }) {
   const generatePDF = async () => {
     try {
       const element = document.getElementById("roof-report-content");
-      const canvas = await html2canvas(element, { scale: 2 });
+      const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#ffffff" });
       const pdf = new jsPDF("p", "mm", "a4");
       const imgData = canvas.toDataURL("image/png");
       const imgWidth = 210;
@@ -74,137 +74,241 @@ export default function RoofReportReview({ report, onClose }) {
     }
   };
 
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Roof Report - {report?.job_customer_name}</DialogTitle>
-        </DialogHeader>
-
-        <div id="roof-report-content" className="space-y-6 pr-4">
-          {/* Header */}
-          <div className="flex items-center justify-between">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-white">
+        <DialogHeader className="border-b pb-4">
+          <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-semibold">{report?.job_customer_name}</h3>
-              <p className="text-sm text-muted-foreground">Generated {new Date(report?.created_date).toLocaleDateString()}</p>
+              <DialogTitle className="text-2xl font-bold mb-1">{report?.job_customer_name}</DialogTitle>
+              <p className="text-sm text-muted-foreground">Professional Roof Assessment Report</p>
             </div>
-            <Badge className={report?.status === "approved" ? "bg-green-600" : report?.status === "rejected" ? "bg-red-600" : "bg-yellow-600"}>
+            <Badge className={report?.status === "approved" ? "bg-green-600" : report?.status === "rejected" ? "bg-red-600" : "bg-blue-600"}>
               {report?.status.charAt(0).toUpperCase() + report?.status.slice(1)}
             </Badge>
           </div>
+        </DialogHeader>
 
-          {/* AI Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> AI Analysis & Recommendations
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-sm max-w-none">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">{report?.ai_analysis}</p>
-            </CardContent>
-          </Card>
-
-          {/* Materials */}
-          {report?.materials_needed?.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Materials Required</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {report.materials_needed.map((mat, idx) => (
-                    <div key={idx} className="flex justify-between p-2 rounded bg-muted/50">
-                      <div>
-                        <p className="font-medium text-sm">{mat.name}</p>
-                        <p className="text-xs text-muted-foreground">{mat.quantity} {mat.unit}</p>
-                      </div>
-                      <p className="font-semibold text-sm">${mat.estimated_cost?.toFixed(2) || "—"}</p>
-                    </div>
-                  ))}
+        <div id="roof-report-content" className="space-y-6 py-4">
+          
+          {/* Executive Summary */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h2 className="text-lg font-bold text-blue-900 mb-3">Executive Summary</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Location</p>
+                  <p className="font-semibold text-sm">{job?.address}, {job?.city}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="flex items-start gap-3">
+                <Hammer className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Roof Type</p>
+                  <p className="font-semibold text-sm capitalize">{job?.roof_type?.replace('_', ' ')}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Roof Age</p>
+                  <p className="font-semibold text-sm">{job?.roof_age_years} years</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <DollarSign className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Estimated Total</p>
+                  <p className="font-bold text-lg text-blue-600">${report?.total_estimated_cost?.toFixed(0)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Site Photos */}
+          {(job?.photos_overall?.length > 0 || job?.photos_damage?.length > 0 || job?.photos_exterior?.length > 0) && (
+            <div className="border rounded-lg overflow-hidden">
+              <div 
+                className="bg-slate-100 p-4 flex items-center justify-between cursor-pointer hover:bg-slate-200"
+                onClick={() => toggleSection('photos')}
+              >
+                <h2 className="text-lg font-bold text-slate-900">Site Photography</h2>
+                <ChevronDown className={`w-5 h-5 transition-transform ${expandedSections.photos ? 'rotate-180' : ''}`} />
+              </div>
+              {expandedSections.photos && (
+                <div className="p-6 bg-white space-y-6">
+                  {job?.photos_overall?.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-sm mb-3 text-slate-700">Overall Roof Condition</h3>
+                      <div className="grid grid-cols-3 gap-3">
+                        {job.photos_overall.map((photo, idx) => (
+                          <img key={idx} src={photo} alt={`Overall ${idx + 1}`} className="w-full h-40 object-cover rounded border" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {job?.photos_damage?.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-sm mb-3 text-red-700">Identified Damage Areas</h3>
+                      <div className="grid grid-cols-3 gap-3">
+                        {job.photos_damage.map((photo, idx) => (
+                          <img key={idx} src={photo} alt={`Damage ${idx + 1}`} className="w-full h-40 object-cover rounded border-2 border-red-200" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {job?.photos_exterior?.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-sm mb-3 text-slate-700">Exterior / Facade</h3>
+                      <div className="grid grid-cols-3 gap-3">
+                        {job.photos_exterior.map((photo, idx) => (
+                          <img key={idx} src={photo} alt={`Exterior ${idx + 1}`} className="w-full h-40 object-cover rounded border" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
-          {/* Cost Estimate */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Cost Estimate</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Materials:</span>
-                <span className="font-semibold">${report?.estimated_material_cost?.toFixed(2) || "0.00"}</span>
+          {/* Analysis & Recommendations */}
+          <div className="border rounded-lg overflow-hidden">
+            <div 
+              className="bg-amber-50 p-4 flex items-center justify-between cursor-pointer hover:bg-amber-100"
+              onClick={() => toggleSection('analysis')}
+            >
+              <h2 className="text-lg font-bold text-amber-900">Professional Analysis & Recommendations</h2>
+              <ChevronDown className={`w-5 h-5 transition-transform ${expandedSections.analysis ? 'rotate-180' : ''}`} />
+            </div>
+            {expandedSections.analysis && (
+              <div className="p-6 bg-white">
+                <div className="prose prose-sm max-w-none space-y-4 text-sm leading-relaxed">
+                  {report?.ai_analysis?.split('\n').filter(Boolean).map((paragraph, idx) => (
+                    <p key={idx} className="text-slate-700">{paragraph}</p>
+                  ))}
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Labor:</span>
-                <span className="font-semibold">${report?.estimated_labor_cost?.toFixed(2) || "0.00"}</span>
+            )}
+          </div>
+
+          {/* Materials & Costs */}
+          <div className="border rounded-lg overflow-hidden">
+            <div 
+              className="bg-green-50 p-4 flex items-center justify-between cursor-pointer hover:bg-green-100"
+              onClick={() => toggleSection('materials')}
+            >
+              <h2 className="text-lg font-bold text-green-900">Materials & Cost Estimate</h2>
+              <ChevronDown className={`w-5 h-5 transition-transform ${expandedSections.materials ? 'rotate-180' : ''}`} />
+            </div>
+            {expandedSections.materials && (
+              <div className="p-6 bg-white space-y-6">
+                {/* Materials Table */}
+                {report?.materials_needed?.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-3 text-slate-900">Material Requirements</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-slate-50">
+                            <th className="text-left p-3 font-semibold text-slate-700">Material</th>
+                            <th className="text-center p-3 font-semibold text-slate-700">Quantity</th>
+                            <th className="text-right p-3 font-semibold text-slate-700">Unit Price</th>
+                            <th className="text-right p-3 font-semibold text-slate-700">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {report.materials_needed.map((mat, idx) => (
+                            <tr key={idx} className="border-b hover:bg-slate-50">
+                              <td className="p-3 text-slate-700">{mat.name}</td>
+                              <td className="text-center p-3 text-slate-600">{mat.quantity} {mat.unit}</td>
+                              <td className="text-right p-3 text-slate-600">${(mat.estimated_cost / (mat.quantity || 1)).toFixed(2)}</td>
+                              <td className="text-right p-3 font-semibold text-slate-900">${mat.estimated_cost?.toFixed(2) || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Cost Summary */}
+                <div className="bg-slate-50 rounded-lg p-4 space-y-3 border">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-700">Materials Subtotal:</span>
+                    <span className="font-semibold text-slate-900">${report?.estimated_material_cost?.toFixed(2) || "0.00"}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-700">Labor (estimated):</span>
+                    <span className="font-semibold text-slate-900">${report?.estimated_labor_cost?.toFixed(2) || "0.00"}</span>
+                  </div>
+                  <div className="border-t pt-3 flex justify-between items-center">
+                    <span className="font-bold text-slate-900">Total Estimated Cost:</span>
+                    <span className="text-xl font-bold text-green-600">${report?.total_estimated_cost?.toFixed(2) || "0.00"}</span>
+                  </div>
+                  <div className="pt-2 text-sm text-slate-600 italic">
+                    Timeline: {report?.timeline_estimate}
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between border-t pt-2">
-                <span className="font-semibold">Total:</span>
-                <span className="font-bold text-lg text-primary">${report?.total_estimated_cost?.toFixed(2) || "0.00"}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3">Timeline: {report?.timeline_estimate}</p>
-            </CardContent>
-          </Card>
+            )}
+          </div>
 
           {/* Reviewer Notes */}
           {report?.status === "draft" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Your Review</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Textarea
-                  value={reviewerNotes}
-                  onChange={(e) => setReviewerNotes(e.target.value)}
-                  placeholder="Add notes, changes, or concerns about this report..."
-                  className="h-24"
-                />
-              </CardContent>
-            </Card>
+            <div className="border rounded-lg p-6 bg-blue-50">
+              <h3 className="font-bold text-slate-900 mb-3">Review Notes</h3>
+              <Textarea
+                value={reviewerNotes}
+                onChange={(e) => setReviewerNotes(e.target.value)}
+                placeholder="Add your professional notes, concerns, or required changes..."
+                className="h-24"
+              />
+            </div>
           )}
 
-          {/* Display Notes if Already Reviewed */}
           {report?.status !== "draft" && report?.reviewer_notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Review Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{report.reviewer_notes}</p>
-              </CardContent>
-            </Card>
+            <div className="border rounded-lg p-6 bg-slate-50">
+              <h3 className="font-bold text-slate-900 mb-2">Review Notes</h3>
+              <p className="text-sm text-slate-700 whitespace-pre-wrap">{report.reviewer_notes}</p>
+            </div>
           )}
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 justify-end border-t pt-4 mt-4">
-          <Button variant="outline" onClick={generatePDF}>
-            <Download className="w-4 h-4 mr-2" /> Download PDF
-          </Button>
-          {report?.status === "draft" && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => rejectMutation.mutate()}
-                disabled={rejectMutation.isPending}
-              >
-                <X className="w-4 h-4 mr-2" /> Reject
-              </Button>
-              <Button
-                onClick={() => approveMutation.mutate()}
-                disabled={approveMutation.isPending}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <CheckCircle2 className="w-4 h-4 mr-2" /> Approve
-              </Button>
-            </>
-          )}
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
+        <div className="flex gap-2 justify-between items-center border-t pt-4 mt-6">
+          <p className="text-xs text-muted-foreground">Generated: {new Date(report?.created_date).toLocaleString()}</p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={generatePDF} size="sm">
+              <Download className="w-4 h-4 mr-2" /> Download PDF
+            </Button>
+            {report?.status === "draft" && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => rejectMutation.mutate()}
+                  disabled={rejectMutation.isPending}
+                  size="sm"
+                  className="text-red-600"
+                >
+                  <X className="w-4 h-4 mr-2" /> Reject
+                </Button>
+                <Button
+                  onClick={() => approveMutation.mutate()}
+                  disabled={approveMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700"
+                  size="sm"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> Approve
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

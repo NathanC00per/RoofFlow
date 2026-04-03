@@ -235,6 +235,7 @@ export default function JobDetail() {
       {selectedReport && (
         <RoofReportReview
           report={selectedReport}
+          job={job}
           onClose={() => setSelectedReport(null)}
         />
       )}
